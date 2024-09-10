@@ -3,6 +3,7 @@
 use axum::async_trait;
 use num_bigint::BigInt;
 use num_traits::sign::Signed;
+use spl_token::solana_program::pubkey::Pubkey;
 use vortex_contracts::state::position::PositionDirection;
 
 
@@ -127,7 +128,7 @@ pub trait BotTrait {
     fn name(&self) -> &str; 
     fn dry_run(&self) -> bool; 
     fn default_interval_ms(&self) -> Option<u64>; 
-    fn pyth_connection(&self) -> Option<&String>; 
+    fn pyth_pubkey_for_connection(&self) -> Option<&Pubkey>; 
 
     async fn init(&self);
 
@@ -144,7 +145,7 @@ pub struct Executor {
     pub name: String,
     pub dry_run: bool,
     pub default_interval_ms: Option<u64>,
-    pub pyth_connection: Option<String>,
+    pub pyth_pubkey_for_connection: Option<Pubkey>,
 }
 
 #[async_trait]
@@ -161,8 +162,8 @@ impl BotTrait for Executor {
         self.default_interval_ms
     }
 
-    fn pyth_connection(&self) -> Option<&String> {
-        self.pyth_connection.as_ref()
+    fn pyth_pubkey_for_connection(&self) -> Option<&Pubkey> {
+        self.pyth_pubkey_for_connection.as_ref()
     }
 
     async fn init(&self) {
