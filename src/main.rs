@@ -3,7 +3,8 @@
 pub mod utils;
 pub mod errors;
 pub mod types;
-pub mod pyth_price_feed_subscriber;
+pub mod executors;
+pub mod vortex_price_feed_subscriber;
 
 
 #[tokio::main]

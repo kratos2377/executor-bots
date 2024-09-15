@@ -4,14 +4,14 @@ use reqwest_eventsource::EventSource;
 
 
 
-pub struct PythPriceFeedSubscriber {
+pub struct VortexPriceFeedSubscriber {
     pub latest_pyth_vaas: HashMap<String , String>,
     pub endpoint: String,
     pub connection: EventSource
     // redis connection
 }
 
-impl PythPriceFeedSubscriber {
+impl VortexPriceFeedSubscriber {
     fn new(endpoint: String) -> Self {
         Self {
             latest_pyth_vaas: HashMap::new(),
