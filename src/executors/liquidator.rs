@@ -1,11 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use futures_util::lock::Mutex;
 use num_bigint::BigInt;
-use opentelemetry::metrics::Meter;
-use vortex_sdk::{AccountProvider, VortexDexClient};
+use opentelemetry::metrics::{Histogram, Meter, ObservableGauge};
+use spl_token::solana_program::pubkey::Pubkey;
+use vortex_sdk::{AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
-pub struct LiquidatorBot<T: AccountProvider> {
+pub struct LiquidatorExecutor<T: AccountProvider, S> {
     pub name: String,
     pub dry_run: bool,
     pub default_interval_ms: u64,
@@ -19,20 +21,20 @@ pub struct LiquidatorBot<T: AccountProvider> {
     pub disable_auto_derisking: bool,
     pub liquidator_config: LiquidatorConfig,
 
-    pub runtime_specs_gauge: Option<ObservableGauge>,
-    pub total_leverage: Option<ObservableGauge>,
-    pub total_collateral: Option<ObservableGauge>,
-    pub free_collateral: Option<ObservableGauge>,
-    pub initial_margin_requirement: Option<ObservableGauge>,
-    pub maintenance_margin_requirement: Option<ObservableGauge>,
-    pub unrealized_pnl: Option<ObservableGauge>,
-    pub unrealized_funding_pnl: Option<ObservableGauge>,
-    pub sdk_call_duration_histogram: Option<Histogram>,
-    pub user_map_user_account_keys_gauge: Option<ObservableGauge>,
+    pub runtime_specs_gauge: Option<ObservableGauge<S>>,
+    pub total_leverage: Option<ObservableGauge<S>>,
+    pub total_collateral: Option<ObservableGauge<S>>,
+    pub free_collateral: Option<ObservableGauge<S>>,
+    pub initial_margin_requirement: Option<ObservableGauge<S>>,
+    pub maintenance_margin_requirement: Option<ObservableGauge<S>>,
+    pub unrealized_pnl: Option<ObservableGauge<S>>,
+    pub unrealized_funding_pnl: Option<ObservableGauge<S>>,
+    pub sdk_call_duration_histogram: Option<Histogram<S>>,
+    pub user_map_user_account_keys_gauge: Option<ObservableGauge<S>>,
 
     pub vortex_client: VortexDexClient<T>,
 
-    pub serum_lookup_table_address: Option<PublicKey>,
+    pub serum_lookup_table_address: Option<Pubkey>,
     pub drift_lookup_tables: Option<AddressLookupTableAccount>,
     pub drift_spot_lookup_tables: Option<AddressLookupTableAccount>,
     

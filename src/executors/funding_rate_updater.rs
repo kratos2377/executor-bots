@@ -5,7 +5,7 @@ use vortex_sdk::{AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
 
-pub struct FundingRateUpdaterBot<T: AccountProvider> {
+pub struct FundingRateUpdaterExecutor<T: AccountProvider> {
     pub name: String,
     pub dry_run: bool,
     pub run_once: bool,

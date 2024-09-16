@@ -61,7 +61,7 @@ pub struct SigsConfirmStruct {
     pub tx_type: TxType
 }
 
-pub struct FillerBot<T: AccountProvider> {
+pub struct FillerExecutor<T: AccountProvider> {
     pub name: String,
     pub dry_run: bool,
     pub default_interval_ms: u64,

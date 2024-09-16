@@ -124,7 +124,7 @@ impl TwapExecutionProgress {
 }
 
 #[async_trait]
-pub trait BotTrait {
+pub trait ExecutorTrait {
     fn name(&self) -> &str; 
     fn dry_run(&self) -> bool; 
     fn default_interval_ms(&self) -> Option<u64>; 
@@ -149,7 +149,7 @@ pub struct Executor {
 }
 
 #[async_trait]
-impl BotTrait for Executor {
+impl ExecutorTrait for Executor {
     fn name(&self) -> &str {
         &self.name
     }

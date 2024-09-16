@@ -1,6 +1,6 @@
 
 
-pub struct FillerLiteBot {
+pub struct FillerLiteExecutor {
     pub order_subscriber: OrderSubscriber
 }
 
