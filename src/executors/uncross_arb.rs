@@ -1,4 +1,7 @@
-use vortex_sdk::{AccountProvider, VortexDexClient};
+use std::collections::HashMap;
+
+use futures_util::lock::Mutex;
+use vortex_sdk::{slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
 
@@ -13,12 +16,12 @@ pub struct UncrossArbExecutor<T: AccountProvider> {
 
     pub vortex_client: VortexDexClient<T>,
     pub lookup_table_account: Option<AddressLookupTableAccount>, // Optional lookup table account
-    pub interval_ids: Vec<NodeJS_Timer>, // Assuming NodeJS_Timer is defined elsewhere
+    pub interval_ids: Vec<u64>, // Assuming NodeJS_Timer is defined elsewhere
 
     pub watchdog_timer_mutex: Mutex<()>, // Mutex for watchdog timer
     pub watchdog_timer_last_pat_time: u128, // Last pat time in milliseconds since epoch
 
-    pub dlob_subscriber: DLOBSubscriber,
+    pub dlob_subscriber: DTLSubscriber,
     pub slot_subscriber: SlotSubscriber,
     pub order_subscriber: OrderSubscriber,
     pub priority_fee_subscriber: PriorityFeeSubscriber,

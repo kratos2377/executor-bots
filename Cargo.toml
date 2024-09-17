@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anchor-spl = "0.29.0"
 solana-program = "1.18.22"
-axum = "0.7.5"
+axum = { version="0.7.5", features = ["ws"] }
 axum-macros = "0.4.1"
 commander = "0.1.5"
 config = "0.14.0"

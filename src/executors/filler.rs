@@ -7,7 +7,7 @@ use solana_client::nonblocking::tpu_connection::TpuConnection;
 use vortex_contracts::state::user_map::{UserMap, UserStatsMap};
 use vortex_sdk::{blockhash_subscriber::BlockhashSubscriber, dlob::dlob_node::{DLOBNode, Node, OrderNode, VAMMNode}, slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
-use crate::vortex_price_feed_subscriber::VortexPriceFeedSubscriber;
+use crate::{global_config::{FillerConfig, GlobalConfig}, metrics::{CounterValue, GaugeValue, HistogramValue, Metrics, RuntimeSpec}, vortex_price_feed_subscriber::VortexPriceFeedSubscriber};
 
 
 
@@ -61,7 +61,7 @@ pub struct SigsConfirmStruct {
     pub tx_type: TxType
 }
 
-pub struct FillerExecutor<T: AccountProvider> {
+pub struct FillerExecutor<'a, T: AccountProvider, S> {
     pub name: String,
     pub dry_run: bool,
     pub default_interval_ms: u64,
@@ -83,8 +83,8 @@ pub struct FillerExecutor<T: AccountProvider> {
     pub global_config: GlobalConfig,
     pub dlob_sub: Option<DTLSubscriber>,
 
-    pub user_map: Option<UserMap>,
-    pub user_stats_map: Option<UserStatsMap>,
+    pub user_map: Option<UserMap<'a>>,
+    pub user_stats_map: Option<UserStatsMap<'a>>,
     pub periodic_mutex: Mutex<u64>,
     pub watchdog_timer_mutex: Mutex<u64>,
     pub wathdog_timer_last_pat_time: Duration,
@@ -110,26 +110,26 @@ pub struct FillerExecutor<T: AccountProvider> {
 
     pub metrics_initialized: bool,
     pub metrics_port: Option<u64>,
-    pub metrics: Option<Metrics>,
+    pub metrics: Option<Metrics<S>>,
     pub boot_time_ms: Option<u64>,
 
     pub runtime_spec: RuntimeSpec,
-    pub runtime_specs_gauge: Option<GaugeValue>,
-    pub try_fill_duration_histogram: Option<HistogramValue>,
-    pub est_tx_cu_histogram: Option<HistogramValue>,
-    pub simulate_tx_histogram: Option<HistogramValue>,
-    pub last_try_fill_time_gauge: Option<GaugeValue>,
-    pub mutex_busy_counter: Option<CounterValue>,
-    pub sent_txs_counter: Option<CounterValue>,
-    pub attempted_triggers_counter: Option<CounterValue>,
-    pub landed_txs_counter: Option<CounterValue>,
-    pub tx_sim_error_counter: Option<CounterValue>,
-    pub pending_tx_sigs_to_confirm_gauge: Option<GaugeValue>,
-    pub pending_tx_sigs_loop_rate_limited_counter: Option<CounterValue>,
-    pub evicted_pending_tx_sigs_to_confirm_counter: Option<CounterValue>,
-    pub expired_nodes_set_size: Option<GaugeValue>,
-    pub clock_subscriber_ts: Option<GaugeValue>,
-    pub wall_clock_ts: Option<GaugeValue>,
+    pub runtime_specs_gauge: Option<GaugeValue<S>>,
+    pub try_fill_duration_histogram: Option<HistogramValue<S>>,
+    pub est_tx_cu_histogram: Option<HistogramValue<S>>,
+    pub simulate_tx_histogram: Option<HistogramValue<S>>,
+    pub last_try_fill_time_gauge: Option<GaugeValue<S>>,
+    pub mutex_busy_counter: Option<CounterValue<S>>,
+    pub sent_txs_counter: Option<CounterValue<S>>,
+    pub attempted_triggers_counter: Option<CounterValue<S>>,
+    pub landed_txs_counter: Option<CounterValue<S>>,
+    pub tx_sim_error_counter: Option<CounterValue<S>>,
+    pub pending_tx_sigs_to_confirm_gauge: Option<GaugeValue<S>>,
+    pub pending_tx_sigs_loop_rate_limited_counter: Option<CounterValue<S>>,
+    pub evicted_pending_tx_sigs_to_confirm_counter: Option<CounterValue<S>>,
+    pub expired_nodes_set_size: Option<GaugeValue<S>>,
+    pub clock_subscriber_ts: Option<GaugeValue<S>>,
+    pub wall_clock_ts: Option<GaugeValue<S>>,
 
     pub has_enought_sol_to_fill: bool,
     pub rebalance_filler: bool,

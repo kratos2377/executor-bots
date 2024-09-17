@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use futures_util::lock::Mutex;
 use vortex_sdk::{dlob::dlob::DLOB, slot_subscriber::SlotSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
-use crate::vortex_price_feed_subscriber::VortexPriceFeedSubscriber;
+use crate::{global_config::GlobalConfig, vortex_price_feed_subscriber::VortexPriceFeedSubscriber};
 
 
 
