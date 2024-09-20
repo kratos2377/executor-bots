@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use vortex_contracts::state::spot_market::SpotMarket;
+use vortex_contracts::state::{dex_state::DexState, spot_market::SpotMarket};
 
 
 pub struct StateChecks {
@@ -11,7 +11,7 @@ pub struct StateChecks {
 
 
 pub struct VortexStateWatcher {
-    pub last_state_account: Option<StateAccount>,
+    pub last_state_account: Option<DexState>,
     pub last_spot_market_account: HashMap<u64, SpotMarket>,
     pub interval: Option<u64>,
 

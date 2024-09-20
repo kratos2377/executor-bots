@@ -4,7 +4,7 @@ use futures_util::lock::Mutex;
 use lru::LruCache;
 use num_bigint::BigInt;
 use vortex_contracts::state::user_map::UserStatsMap;
-use vortex_sdk::{blockhash_subscriber::BlockhashSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{blockhash_subscriber::BlockhashSubscriber, common::priority_fee::PriorityFeeSubscriber, dlob::dlob_node::NodeToFill, dtl_subscriber::dtl_subscriber::DTLSubscriber, order_subscriber::order_subscriber::OrderSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 use crate::{global_config::GlobalConfig, metrics::{CounterValue, GaugeValue, HistogramValue, Metrics, RuntimeSpec}, vortex_price_feed_subscriber::VortexPriceFeedSubscriber};
 
@@ -13,7 +13,7 @@ use super::filler::TxType;
 
 pub struct SpotTxSigsToConfirm {
     pub ts: u64,
-    pub nodesd_filled: Option<NodeToFill>,
+    pub nodes_filled: Option<NodeToFill>,
     pub fill_tx_id: u64,
     pub tx_type: TxType,
 }
@@ -31,9 +31,9 @@ pub struct SpotFillerExecutor<'a, T: AccountProvider , S> {
     pub fill_tx_id: u64,
 
 
-    pub dlob_subscriber: Option<DTLSubscriber>,
+    pub dlob_subscriber: Option<DTLSubscriber<T>>,
     pub user_map: UserMap,
-    pub order_subscriber: OrderSubscriber,
+    pub order_subscriber: OrderSubscriber<T>,
     pub user_stats_map: UserStatsMap<'a>,
 
     pub periodic_task_mutex: Arc<Mutex<u64>>,
@@ -47,7 +47,7 @@ pub struct SpotFillerExecutor<'a, T: AccountProvider , S> {
     pub revert_on_failure: bool,
     pub simulate_tx_for_cu_estimate: Option<bool>,
 
-    pub pending_tx_sigs_to_confirm: LruCache<String , SpotTxSigsToConfirm>
+    pub pending_tx_sigs_to_confirm: LruCache<String , SpotTxSigsToConfirm>,
 
     pub expired_nodes_set: LruCache<String , bool>,
     pub confirm_loop_running: bool,

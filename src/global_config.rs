@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use num_bigint::BigInt;
+use vortex_sdk::config::VortexEnvironmentConfig;
 
 use crate::types::OrderExecutionAlgoType;
 

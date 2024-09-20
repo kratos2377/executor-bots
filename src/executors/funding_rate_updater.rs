@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use futures_util::lock::Mutex;
-use vortex_sdk::{AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeSubscriberMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
 

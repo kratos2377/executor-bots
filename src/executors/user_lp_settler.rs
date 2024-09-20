@@ -1,5 +1,5 @@
 use futures_util::lock::Mutex;
-use vortex_sdk::{usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeSubscriberMap, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
 

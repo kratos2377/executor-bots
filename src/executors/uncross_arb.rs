@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use futures_util::lock::Mutex;
-use vortex_sdk::{slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeSubscriber, config::VortexEnvironmentConfig, dtl_subscriber::dtl_subscriber::DTLSubscriber, order_subscriber::order_subscriber::OrderSubscriber, slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 
 
@@ -21,9 +21,9 @@ pub struct UncrossArbExecutor<T: AccountProvider> {
     pub watchdog_timer_mutex: Mutex<()>, // Mutex for watchdog timer
     pub watchdog_timer_last_pat_time: u128, // Last pat time in milliseconds since epoch
 
-    pub dlob_subscriber: DTLSubscriber,
+    pub dlob_subscriber: DTLSubscriber<T>,
     pub slot_subscriber: SlotSubscriber,
-    pub order_subscriber: OrderSubscriber,
+    pub order_subscriber: OrderSubscriber<T>,
     pub priority_fee_subscriber: PriorityFeeSubscriber,
 
     pub last_settle_pnl: u128, // Last settle PnL in milliseconds since epoch

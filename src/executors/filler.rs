@@ -3,9 +3,9 @@ use std::{collections::HashMap, time::Duration};
 use futures_util::lock::Mutex;
 use lru::LruCache;
 use num_bigint::BigInt;
-use solana_client::nonblocking::tpu_connection::TpuConnection;
+use solana_client::nonblocking::{quic_client::QuicTpuConnection, tpu_connection::TpuConnection};
 use vortex_contracts::state::user_map::{UserMap, UserStatsMap};
-use vortex_sdk::{blockhash_subscriber::BlockhashSubscriber, dlob::dlob_node::{DLOBNode, Node, OrderNode, VAMMNode}, slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{blockhash_subscriber::BlockhashSubscriber, bulk_account_loader::BulkAccountLoader, clock_subscriber::ClockSubscriber, common::priority_fee::PriorityFeeSubscriber, config::UserSubscriptionConfig, dlob::dlob_node::{DLOBNode, Node, NodeToFill, OrderNode, VAMMNode}, dtl_subscriber::dtl_subscriber::DTLSubscriber, slot_subscriber::SlotSubscriber, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 use crate::{global_config::{FillerConfig, GlobalConfig}, metrics::{CounterValue, GaugeValue, HistogramValue, Metrics, RuntimeSpec}, vortex_price_feed_subscriber::VortexPriceFeedSubscriber};
 
@@ -72,16 +72,15 @@ pub struct FillerExecutor<'a, T: AccountProvider, S> {
 
     pub vortex_client: VortexDexClient<T>,
 
-    pub tx_confirmation_connection: ClientConnection,
+    pub tx_confirmation_connection: QuicTpuConnection,
     pub polling_interval_ms: u64,
     pub revert_on_failure: bool,
     pub simulate_tx_for_cu_estimate: bool,
     pub lookup_table_accounts: Vec<AddressLookupTableAccount>,
-    pub bundle_sender: Option<BundleSender>,
 
     pub filler_config: FillerConfig,
     pub global_config: GlobalConfig,
-    pub dlob_sub: Option<DTLSubscriber>,
+    pub dlob_sub: Option<DTLSubscriber<T>>,
 
     pub user_map: Option<UserMap<'a>>,
     pub user_stats_map: Option<UserStatsMap<'a>>,

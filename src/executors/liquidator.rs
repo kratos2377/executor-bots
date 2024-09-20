@@ -4,7 +4,7 @@ use futures_util::lock::Mutex;
 use num_bigint::BigInt;
 use opentelemetry::metrics::{Histogram, Meter, ObservableGauge};
 use spl_token::solana_program::pubkey::Pubkey;
-use vortex_sdk::{usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 use crate::{global_config::LiquidatorConfig, metrics::RuntimeSpec, types::TwapExecutionProgress};
 

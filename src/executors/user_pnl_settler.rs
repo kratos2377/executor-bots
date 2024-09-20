@@ -1,6 +1,6 @@
 use futures_util::lock::Mutex;
 use num_bigint::BigInt;
-use vortex_sdk::{slot_subscriber::SlotSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeSubscriberMap, slot_subscriber::SlotSubscriber, usermap::UserMap, AccountProvider, AddressLookupTableAccount, VortexDexClient};
 
 use crate::global_config::GlobalConfig;
 

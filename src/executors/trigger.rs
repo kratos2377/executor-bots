@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use futures_util::lock::Mutex;
 use opentelemetry::metrics::{Counter, Histogram, Meter, ObservableGauge};
-use vortex_sdk::{slot_subscriber::SlotSubscriber, usermap::UserMap, AccountProvider, VortexDexClient};
+use vortex_sdk::{common::priority_fee::PriorityFeeCalculator, dtl_subscriber::dtl_subscriber::DTLSubscriber, slot_subscriber::SlotSubscriber, usermap::UserMap, AccountProvider, VortexDexClient};
 
 use crate::metrics::RuntimeSpec;
 
@@ -16,7 +16,7 @@ pub struct TriggerExecutor<T: AccountProvider, S> {
 
     pub vortex_client: VortexDexClient<T>,
     pub slot_subscriber: SlotSubscriber,
-    pub dlob_subscriber: Option<DTLSubscriber>, // Optional subscriber
+    pub dlob_subscriber: Option<DTLSubscriber<T>>, // Optional subscriber
     pub triggering_nodes: HashMap<String, u32>, // Using HashMap for key-value pairs
     pub periodic_task_mutex: Mutex<()>, // Mutex for synchronization
     pub interval_ids: Vec<u128>, // Assuming NodeJS_Timer is defined elsewhere
