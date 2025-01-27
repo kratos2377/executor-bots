@@ -3,7 +3,7 @@ use std::{env, sync::atomic::AtomicU16};
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 use std::sync::atomic::Ordering::SeqCst;
-use super::config_types::{KafkaConfiguration, MongoDatabaseConfiguration, PostgresDatabaseUrl, RedisDBUrl, ServerConfiguration};
+use super::config_types::{EventQueueConfig, ExecutorsConfiguration, KafkaConfiguration, ServerConfiguration};
 
 
 pub static SERVER_PORT: AtomicU16 = AtomicU16::new(0);
@@ -12,9 +12,8 @@ pub static SERVER_PORT: AtomicU16 = AtomicU16::new(0);
 pub struct Configuration {
     pub kafka: KafkaConfiguration,
     pub server: ServerConfiguration,
-    pub mongo_db: MongoDatabaseConfiguration,
-    pub postgres_url: PostgresDatabaseUrl,
-    pub redis_url: RedisDBUrl,
+    pub executors_config: ExecutorsConfiguration,
+    pub event_queue_config: EventQueueConfig,
 }
 
 impl Configuration {

@@ -59,39 +59,23 @@ pub struct ServerConfiguration {
     pub port: u16,
 }
 
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct MongoDatabaseConfiguration {
-    pub url: String,
-    pub connection: MongoDatabaseConnectionProperties,
-}
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct MongoDatabaseConnectionProperties {
-    pub pool: MongoDatabasePoolProperties,
-    pub connect_timeout: Option<u64>,
-    pub idle_timeout: Option<u64>,
+pub struct ExecutorsConfiguration {
+    pub number_of_executors: usize,
 }
+
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct MongoDatabasePoolProperties {
-    pub min: Option<u32>,
-    pub max: Option<u32>,
+pub struct EventQueueConfig {
+    pub queue_size: usize,
 }
 
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct PostgresDatabaseUrl {
-    pub url: String,
-}
 
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct RedisDBUrl {
-    pub url: String,
-}
+
+
 
 
 

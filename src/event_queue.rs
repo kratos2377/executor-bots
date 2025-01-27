@@ -35,11 +35,16 @@ impl EventQueue {
             len: 0,
             executors_senders: Vec::with_capacity(20),
             //Change this to a lock free concurrent queue
-            executors_queue: Vec::with_capacity(100),
+            executors_queue: Vec::with_capacity(30),
             executors_order_listener: rn,
             event_queue_sender: sn,
         }
 
+    }
+
+    pub fn add_new_executor(&mut self , index: usize , exec: Sender<GameBetSettleKafkaPayload>) {
+
+            self.executors_senders[index] = exec;
     }
 
 }
