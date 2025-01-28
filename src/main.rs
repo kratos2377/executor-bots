@@ -4,10 +4,10 @@ use axum::{response::IntoResponse, routing::get, Router};
 use conf::{config_types::ServerConfiguration, configuration};
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
-use model::GameBetSettleKafkaPayload;
+use model::{EventRecord, GameBetSettleKafkaPayload, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
 use rdkafka::{consumer::StreamConsumer, Message};
 use serde_json::json;
-use tokio::{spawn, sync::Mutex, task::JoinHandle};
+use tokio::{spawn, sync::{mpsc::{Receiver, Sender}, Mutex}, task::JoinHandle};
 use tracing::{error, warn};
 use crate::configuration::Configuration;
 
@@ -31,21 +31,124 @@ async fn main()   {
 
   let mut event_queue = Box::leak(Box::new(EventQueue::new()));
 
+  let event_queue_sender_clone = event_queue.event_queue_sender.clone();
+  
+  let mut hyperion_handles = vec![];
+
   for ind in 0..hy_config.executors_config.number_of_executors {
 
-    let executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone());
+    let mut executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone());
 
  
     event_queue.add_new_executor(ind.clone(), executor.executor_event_sender);
+
+
+    let executor_handle = tokio::spawn(async move {
+     loop {
+       match executor.executor_event_reciever.recv().await {
+
+        Some(bet_settlement_event) =>  {
+          
+          //Add Solana instruction creator 
+          // Add success/failure producer logic
+
+
+          //Once event is producer let event queue know the executor is available to pick up new task
+          let new_event_record = EventRecord { payload: executor.executor_index.to_string(), event_type: EXECUTOR_INDEX_ADD.to_string() };
+          let _ = executor.event_queue_sender.send(new_event_record).await;
+
+        }
+
+        None => {}
+      }
+    }
+    });
+
+
+    hyperion_handles.push(executor_handle);
+
   }
 
 
 
 
-  let game_bet_settlers_handle = init_game_bet_settle_consumers(event_queue, &hy_config, kafka_consumer);
 
 
-  start_web_server(&hy_config.server, vec![game_bet_settlers_handle])
+  // THis handle will listen to all events coming to EventQueue
+
+
+
+
+  let event_queue_events_listener = tokio::spawn({
+    let mut event_records_listener = Box::leak(Box::new(event_queue.executors_order_listener.take().unwrap()));
+    async {
+      loop {
+        let event_recv = event_records_listener.recv().await;
+
+        if event_recv.is_some() {
+          let event_record = event_recv.unwrap();
+          match  event_record.event_type.as_str() {
+            CONSUMER_GROUP_BET_EVENT_ADD => {
+                let parsed_payload = serde_json::from_str(&event_record.payload);
+
+
+                if parsed_payload.is_ok() {
+                  let game_bet_record: GameBetSettleKafkaPayload = parsed_payload.unwrap();
+                  event_queue.push(game_bet_record);
+                }
+            },
+
+
+            EXECUTOR_INDEX_ADD => {
+              let parsed_payload = event_record.payload.parse::<usize>();
+
+
+              if parsed_payload.is_ok() {
+                let parsed_ind = parsed_payload.unwrap();
+                event_queue.executors_queue.push(parsed_ind);
+              }
+            }
+
+            _ => {}
+          }
+        }
+    }
+    }
+
+  });
+
+
+      //Check queue and send events to executors
+      let send_bet_to_executors = tokio::spawn(async  {
+        loop {
+          let exec_ind = event_queue.executors_queue.pop();
+          if exec_ind.is_some() {
+            let exec_ind_rec = exec_ind.unwrap();
+    
+            if event_queue.get_len() > 0   {
+              let bet_event = event_queue.pop();
+      
+              if bet_event.is_some() {
+                let bet_event_record = bet_event.unwrap();
+      
+      
+                let _ = event_queue.executors_senders[exec_ind_rec].send(bet_event_record).await;
+      
+              }
+            }
+          }
+        }
+      });
+    
+
+
+
+  let game_bet_settlers_handle = init_game_bet_settle_consumers(event_queue_sender_clone, &hy_config, kafka_consumer);
+
+  hyperion_handles.push(game_bet_settlers_handle);
+
+
+  start_web_server(&hy_config.server, hyperion_handles)
     .await
 
 
@@ -117,7 +220,7 @@ fn init_routing() -> Router {
 
 
 fn init_game_bet_settle_consumers(
-  event_queue: &'static mut EventQueue,
+  consumer_event_sender: Sender<EventRecord>,
   config: &Configuration,
   kafka_consumers: HashMap<String, StreamConsumer>,
 ) -> JoinHandle<()> {
@@ -126,7 +229,7 @@ fn init_game_bet_settle_consumers(
 
   for (key_topic , value) in kafka_consumers.into_iter() {
      let kf_join =  listen(
-        event_queue,
+        consumer_event_sender.clone(),
           config,
           value,
           key_topic
@@ -148,7 +251,7 @@ fn init_game_bet_settle_consumers(
 
 
 pub fn listen(
-  event_queue: &'static EventQueue,
+  consumer_event_sender: Sender<EventRecord>,
   config: &Configuration,
   stream_consumer: StreamConsumer,
   key_topic: String,
@@ -157,19 +260,18 @@ pub fn listen(
 
   // Start listener
   tokio::spawn(async move {
-      do_listen( event_queue,&stream_consumer, topic ).await;
+      do_listen( consumer_event_sender,&stream_consumer, topic ).await;
   })
 }
 
 pub async fn do_listen(
-  event_queue: &'static EventQueue,
+  consumer_event_sender: Sender<EventRecord>,
   stream_consumer: &StreamConsumer,
   topic_name: String,
 ) {
 
 
   loop {
-    if event_queue.get_len() < 5000 {
           match stream_consumer.recv().await {
             Err(e) => warn!("Error: {}", e),
             Ok(message) => {
@@ -180,18 +282,16 @@ pub async fn do_listen(
             match topic {
 
               START_GAME_SETTLE_EVENT=> {
-                let game_bet_payload = serde_json::from_str(&payload);
-
-                if game_bet_payload.is_err() {
-                  error!("Some error occured while parsing string to GameBetKafkaPayload")
-                } else {
-                  let game_bet_convertred_record: GameBetSettleKafkaPayload = game_bet_payload.unwrap();
+                let game_bet_payload_event_record = EventRecord {
+                    payload,
+                    event_type: CONSUMER_GROUP_BET_EVENT_ADD.to_string(),
+                };
 
 
                   //later add logic that if push is unsuccessful that publish fail event back
-                 let _ =  event_queue.push(game_bet_convertred_record);
+                 let _ =  consumer_event_sender.send(game_bet_payload_event_record).await;
 
-              }
+              
 
             }
 
@@ -205,7 +305,7 @@ pub async fn do_listen(
                 
         }
         }
-    }
+    
 }
 
 }

@@ -1,9 +1,10 @@
-use std::sync::{atomic::{AtomicBool, AtomicU64, Ordering}, RwLock};
+use std::sync::{atomic::{AtomicBool, AtomicU64, Ordering}, Arc, RwLock};
 
-use crossbeam::utils::CachePadded;
-use tokio::sync::mpsc::{Receiver, Sender};
+use crossbeam::{queue::ArrayQueue, utils::CachePadded};
+use futures::future::Join;
+use tokio::{sync::mpsc::{Receiver, Sender}, task::JoinHandle};
 
-use crate::model::GameBetSettleKafkaPayload;
+use crate::model::{EventRecord, GameBetSettleKafkaPayload, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
 
 
 
@@ -15,9 +16,9 @@ pub struct EventQueue {
     pub tail: CachePadded<AtomicU64>,
     pub len: u32,
     pub executors_senders: Vec<Sender<GameBetSettleKafkaPayload>>,
-    pub executors_queue: Vec<String>,
-    pub executors_order_listener: Receiver<String>,
-    pub event_queue_sender: Sender<String>
+    pub executors_queue: ArrayQueue<usize>,
+    pub executors_order_listener: Option<Receiver<EventRecord>>,
+    pub event_queue_sender: Sender<EventRecord>
 }
 
 
@@ -27,7 +28,7 @@ impl EventQueue {
 
         // Add config support to initialize queue with config mentioned
 
-        let (sn , rn) = tokio::sync::mpsc::channel::<String>(100);
+        let (sn , rn) = tokio::sync::mpsc::channel::<EventRecord>(10000);
 
         Self {
             events_queue: Vec::with_capacity(6000),
@@ -36,8 +37,8 @@ impl EventQueue {
             len: 0,
             executors_senders: Vec::with_capacity(20),
             //Change this to a lock free concurrent queue
-            executors_queue: Vec::with_capacity(30),
-            executors_order_listener: rn,
+            executors_queue: ArrayQueue::new(30),
+            executors_order_listener: Some(rn),
             event_queue_sender: sn,
         }
 
@@ -57,9 +58,11 @@ impl EventQueue {
         if tail >= head {
             tail - head
         } else {
-            (tail + capacity) - head
+            ( head - tail) + 1
         }
     }
+
+
 
 
     pub fn push(&self, event: GameBetSettleKafkaPayload) -> Result<(), &'static str> {
@@ -98,6 +101,5 @@ impl EventQueue {
         self.head.store(next_head, Ordering::Release);
         Some(event)
     }
-
 
 }

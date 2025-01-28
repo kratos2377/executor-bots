@@ -2,14 +2,14 @@
 use rdkafka::producer::FutureProducer;
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::model::GameBetSettleKafkaPayload;
+use crate::model::{EventRecord, GameBetSettleKafkaPayload};
 
 
 pub struct BetSettleExecutor {
     pub executor_id: String,
     pub producer: FutureProducer,
     // This will send event to event_queue to add to the executors_order queue
-    pub event_queue_sender: Sender<String>,
+    pub event_queue_sender: Sender<EventRecord>,
     pub executor_index: u32,
     // this will listen to events that need to be settled
     pub executor_event_reciever: Receiver<GameBetSettleKafkaPayload>,
@@ -19,7 +19,7 @@ pub struct BetSettleExecutor {
 
 
 impl BetSettleExecutor {
-    pub fn new(producer: FutureProducer , index: u32 , event_queue_sender: Sender<String>) -> Self {
+    pub fn new(producer: FutureProducer , index: u32 , event_queue_sender: Sender<EventRecord>) -> Self {
         let (exsn , exrn) = tokio::sync::mpsc::channel::<GameBetSettleKafkaPayload>(10);
 
         Self { 
@@ -33,9 +33,5 @@ impl BetSettleExecutor {
 
         }
     }
-
-
-   
-
   
 }
