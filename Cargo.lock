@@ -1593,9 +1593,11 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 name = "executor-bots"
 version = "0.1.0"
 dependencies = [
+ "anchor-lang",
  "anchor-spl",
  "axum",
  "axum-macros",
+ "bytemuck",
  "config",
  "crossbeam",
  "dotenv",
@@ -1617,6 +1619,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-opentelemetry",
+ "vortex-idl-gen",
 ]
 
 [[package]]
@@ -5582,6 +5585,19 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "vortex-idl-gen"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "syn 2.0.77",
+]
 
 [[package]]
 name = "want"
