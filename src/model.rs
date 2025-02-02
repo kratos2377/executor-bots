@@ -9,6 +9,7 @@ pub struct GameBetSettleKafkaPayload {
     pub user_betting_on: String,
     pub record_id: String,
     pub user_wallet_key: String,
+    pub is_valid: bool,
 }
 
 
