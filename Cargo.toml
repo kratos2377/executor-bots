@@ -33,6 +33,9 @@ futures = "0.3.31"
 tracing = "0.1.40"
 crossbeam = "0.8.4"
 bytemuck = "1.17"
+thiserror = "2.0.11"
+base64 = "0.22.1"
+bs58 = "0.5.1"
 
 
 [build-dependencies]

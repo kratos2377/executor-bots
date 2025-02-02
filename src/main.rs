@@ -22,6 +22,9 @@ pub mod constants;
 pub mod transaction;
 pub mod vortex_idl;
 pub mod utils;
+pub mod types;
+pub mod wallet;
+pub mod executor_rpc_client;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
 
