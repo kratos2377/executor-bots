@@ -18,7 +18,10 @@ pub mod executor;
 pub mod errors;
 pub mod event_queue;
 pub mod model;
+pub mod constants;
+pub mod transaction;
 pub mod vortex_idl;
+pub mod utils;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
 
@@ -51,6 +54,13 @@ async fn main()   {
         Some(bet_settlement_event) =>  {
           
           //Add Solana instruction creator 
+
+            let tx = if bet_settlement_event.is_valid {
+
+            } else {
+
+            };
+
           // Add success/failure producer logic
 
 
