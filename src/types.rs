@@ -1,9 +1,9 @@
 use solana_sdk::{instruction::InstructionError, transaction::TransactionError};
 use thiserror::Error;
-
+use tokio::sync::oneshot;
 use crate::vortex_idl::errors::ErrorCode;
 
-
+pub type UnsubHandle = oneshot::Sender<()>;
 
 pub type VortexSdkResult<T> = Result<T, VortexSdkError>;
 

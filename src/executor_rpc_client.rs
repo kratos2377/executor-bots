@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_sdk::{hash::Hash, message::VersionedMessage, signature::Signature};
 
 
-use crate::{types::VortexSdkResult, utils::get_http_url, wallet::Wallet};
+use crate::{blockhash_subscriber::BlockhashSubscriber, types::{VortexSdkError, VortexSdkResult}, utils::get_http_url, wallet::Wallet};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Context {
@@ -44,8 +44,10 @@ impl VortexExecutorClient {
         tx: VersionedMessage,
     ) -> VortexSdkResult<Signature> {
         // will need to replace recent hash block logic
+        
+        let recent_block_hash = self.backend.get_latest_blockhash().await?;
         self.backend
-            .sign_and_send(self.wallet() , tx , Hash::new("random_slice".as_bytes()))
+            .sign_and_send(self.wallet() , tx , recent_block_hash)
             .await
             .map_err(Into::into)
     }
@@ -60,11 +62,10 @@ impl VortexExecutorClient {
         recent_block_hash: Option<Hash>,
         config: RpcSendTransactionConfig,
     ) -> VortexSdkResult<Signature> {
-                // will need to replace recent hash block logic
-        let recent_block_hash = match recent_block_hash {
-            Some(h) => h,
-            None => Hash::new("random_slice".as_bytes()),
-        };
+            let recent_block_hash = match recent_block_hash {
+                Some(h) => h,
+                None => self.backend.get_latest_blockhash().await?,
+            };
         self.backend
             .sign_and_send_with_config(self.wallet(), tx, recent_block_hash, config)
             .await
@@ -79,6 +80,7 @@ impl VortexExecutorClient {
 
 pub struct VortexExecutorClientBackend {
     rpc_client: Arc<RpcClient>,
+    blockhash_subscriber: BlockhashSubscriber,
 }
 
 
@@ -86,13 +88,24 @@ impl VortexExecutorClientBackend  {
     
     async fn new(rpc_client: Arc<RpcClient> ) -> VortexSdkResult<Self> {
         Ok(
-            Self { rpc_client: Arc::clone(&rpc_client) }
+            Self { rpc_client: Arc::clone(&rpc_client) ,  blockhash_subscriber: BlockhashSubscriber::new(Duration::from_secs(2), rpc_client) }
         )
     }
 
     /// Return a handle to the inner RPC client
     fn client(&self) -> Arc<RpcClient> {
         Arc::clone(&self.rpc_client)
+    }
+
+    pub async fn get_latest_blockhash(&self) -> VortexSdkResult<Hash> {
+        match self.blockhash_subscriber.get_latest_blockhash() {
+            Some(hash) => Ok(hash),
+            None => self
+                .rpc_client
+                .get_latest_blockhash()
+                .await
+                .map_err(VortexSdkError::Rpc),
+        }
     }
 
 

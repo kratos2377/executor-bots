@@ -1605,6 +1605,7 @@ dependencies = [
  "dotenv",
  "futures",
  "futures-util",
+ "log",
  "nano-id",
  "num-bigint 0.4.6",
  "num-traits",
