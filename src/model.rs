@@ -21,6 +21,17 @@ pub struct EventRecord {
 }
 
 
+#[derive(Clone , Serialize , Deserialize)]
+pub struct GameUserBetSettleEvent {
+    pub game_id: String,
+    pub session_id: String,
+    pub user_id: String,
+    pub winner_id: String,
+    pub is_game_valid: bool,
+    pub is_error: bool
+}
+
+
 //Event Types
 pub const EXECUTOR_INDEX_ADD: &str = "executor_index_add";
 pub const CONSUMER_GROUP_BET_EVENT_ADD: &str = "consumer_group_bet_event_add";

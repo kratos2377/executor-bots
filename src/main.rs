@@ -1,14 +1,21 @@
-use std::{collections::{btree_map::Range, HashMap}, net::SocketAddr, sync::{atomic::Ordering, Arc}};
+use std::{collections::{btree_map::Range, HashMap}, fs::File, net::SocketAddr, str::FromStr, sync::{atomic::Ordering, Arc}};
 
 use axum::{response::IntoResponse, routing::get, Router};
 use conf::{config_types::ServerConfiguration, configuration};
+use constants::SOLANA_DEVNET_URL;
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
-use model::{EventRecord, GameBetSettleKafkaPayload, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
-use rdkafka::{consumer::StreamConsumer, Message};
+use model::{EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
+use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
 use tokio::{spawn, sync::{mpsc::{Receiver, Sender}, Mutex}, task::JoinHandle};
 use tracing::{error, warn};
+use transaction::get_settle_all_games_instruction;
+use types::VortexSdkError;
+use utils::get_vortex_signer_account;
+use uuid::Uuid;
 use crate::configuration::Configuration;
 
 
@@ -42,12 +49,19 @@ async fn main()   {
   
   let mut hyperion_handles = vec![];
 
+  let file = File::open(hy_config.executors_config.keypair_path.clone()).unwrap();
+  let keypair_bytes: Vec<u8> = serde_json::from_reader(file).unwrap();
+  
+  // Create keypair from bytes
+
   for ind in 0..hy_config.executors_config.number_of_executors {
 
-    let mut executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone());
+    let vortex_keypair = Keypair::from_bytes(&keypair_bytes).unwrap();
+    let mut executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone(),
+                                RpcClient::new(SOLANA_DEVNET_URL.to_string()) , vortex_keypair  ).await;
 
  
-    event_queue.add_new_executor(ind.clone(), executor.executor_event_sender);
+    event_queue.add_new_executor(ind.clone(), executor.executor_event_sender.clone());
 
 
     let executor_handle = tokio::spawn(async move {
@@ -55,16 +69,58 @@ async fn main()   {
        match executor.executor_event_reciever.recv().await {
 
         Some(bet_settlement_event) =>  {
+          // session id will always be of length 21 so we can enforce the length
           
-          //Add Solana instruction creator 
+          
+          if bet_settlement_event.session_id.len() == 21 {
+            let game_id_bytes = Uuid::parse_str(&bet_settlement_event.game_id).unwrap().to_bytes_le();
+            let user_id_bytes = Uuid::parse_str(&bet_settlement_event.user_id).unwrap().to_bytes_le();
+            let user_betting_on_bytes = Uuid::parse_str(&bet_settlement_event.user_betting_on).unwrap().to_bytes_le();
+            
+          let session_id_bytes = bet_settlement_event.session_id.as_bytes().try_into().unwrap();
+            let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
+  
+            let user_bet_wallet_key = Pubkey::from_str( &bet_settlement_event.user_wallet_key).unwrap();
+            //Add Solana instruction creator 
+              let tx = if bet_settlement_event.is_valid {
+  
+                get_settle_all_games_instruction(*get_vortex_signer_account() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+  
+              } else {
+                get_settle_all_games_instruction(*get_vortex_signer_account() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+              };
 
-            let tx = if bet_settlement_event.is_valid {
 
-            } else {
+             let res =  if tx.is_ok() {
+                  let tx_record = tx.unwrap();
 
-            };
+                  executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig::default()).await
+              } else {
+                Err(VortexSdkError::ErrorWhileParsingTransactionRecord)
+              };
+
 
           // Add success/failure producer logic
+
+
+         let kafka_payload_event = if res.is_err() {
+            // If error we will publish error event to kafka
+            let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+               session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
+          
+              kafka_event
+          } else {
+
+           let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+              session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
+
+              kafka_event
+          };
+
+          let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+  
+          }
+
 
 
           //Once event is producer let event queue know the executor is available to pick up new task

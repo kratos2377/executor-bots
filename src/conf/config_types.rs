@@ -64,6 +64,7 @@ pub struct ServerConfiguration {
 #[allow(unused)]
 pub struct ExecutorsConfiguration {
     pub number_of_executors: usize,
+    pub keypair_path: String
 }
 
 

@@ -7,19 +7,20 @@ use crate::{constants::PROGRAM_ID, types::{VortexSdkError, VortexSdkResult}};
 
 
 static VORTEX_STATE_ACCOUNT: OnceLock<Pubkey> = OnceLock::new();
+static VORTEX_SIGNER_ACCOUNT: OnceLock<Pubkey> = OnceLock::new();
 
 
-pub fn get_user_game_bet_pubkey( game_id: [u8;16] , user_betting_on_id: [u8;16] ,   user_bet_wallet_key: Pubkey , session_id: [u8;21]) -> Pubkey {
+pub fn get_user_game_bet_pubkey( game_id: [u8;16] , user_betting_on_id: [u8;16] ,   user_bet_wallet_key: Pubkey , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "user_game_bet".as_bytes() , &game_id , &user_betting_on_id , user_bet_wallet_key.as_ref() , &session_id ], 
+        &[ "user_game_bet".as_bytes() , &game_id , &user_betting_on_id , user_bet_wallet_key.as_ref() , session_id ], 
         &PROGRAM_ID).0;
 }
 
 
 
-pub fn get_game_pubkey( game_id: [u8;16]  , session_id: [u8;21]) -> Pubkey {
+pub fn get_game_pubkey( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "game".as_bytes() , &game_id  , &session_id ], 
+        &[ "game".as_bytes() , &game_id  , session_id ], 
         &PROGRAM_ID).0;
 }
 
@@ -31,15 +32,15 @@ pub fn get_game_pubkey( game_id: [u8;16]  , session_id: [u8;21]) -> Pubkey {
 // The reason for this is that the person winning should not be able to increase their bet when they are sure of their victory
 // Since final bet is calculated by (game_total_pot/total_money_staked_on_winner_by_any_person)
 //Winning player might get unfair advantage at the end
-pub fn get_player_bet_pubkey( game_id: [u8;16]  , user_betting_on_id: [u8;16] , session_id: [u8;21]) -> Pubkey {
+pub fn get_player_bet_pubkey( game_id: [u8;16]  , user_betting_on_id: [u8;16] , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "player_bet".as_bytes() , &game_id  , &user_betting_on_id,  &session_id ], 
+        &[ "player_bet".as_bytes() , &game_id  , &user_betting_on_id,  session_id ], 
         &PROGRAM_ID).0;
 }
 
-pub fn get_game_vault_address( game_id: [u8;16]  , session_id: [u8;21]) -> Pubkey {
+pub fn get_game_vault_address( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "game_vault".as_bytes() , &game_id  ,  &session_id ], 
+        &[ "game_vault".as_bytes() , &game_id  ,  session_id ], 
         &PROGRAM_ID).0;
 }
 
@@ -52,6 +53,16 @@ pub fn get_vortex_state_account() -> &'static Pubkey {
         state_account
     })
 }
+
+
+pub fn get_vortex_signer_account() -> &'static Pubkey {
+    VORTEX_SIGNER_ACCOUNT.get_or_init(|| {
+        let (signer_account, _seed) =
+            Pubkey::find_program_address(&[&b"vortex_signer"[..]], &PROGRAM_ID);
+        signer_account
+    })
+}
+
 
 
 pub fn derive_vortex_signer() -> Pubkey {
@@ -93,4 +104,17 @@ pub fn read_keypair_str_multi_format(key: &str) -> VortexSdkResult<Keypair> {
     }
 
     Err(VortexSdkError::InvalidSeed)
+}
+
+
+
+
+pub fn get_http_url(url: &str) -> VortexSdkResult<String> {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        Ok(url.to_string())
+    } else if url.starts_with("ws://") || url.starts_with("wss://") {
+        Ok(url.replacen("ws", "http", 1))
+    } else {
+        Err(VortexSdkError::InvalidUrl)
+    }
 }

@@ -18,7 +18,9 @@ pub enum VortexSdkError {
     #[error("insufficient SOL balance for fees")]
     OutOfSOL,
     #[error("Error while making versioned transaction")]
-    ErrorWhileMakingVersionTransaction
+    ErrorWhileMakingVersionTransaction,
+    #[error("Error while parsing transaction record")]
+    ErrorWhileParsingTransactionRecord
 }
 
 
