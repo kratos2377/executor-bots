@@ -1,0 +1,28 @@
+server:
+  port: 3030
+
+
+kafka:
+  broker:
+    urls: localhost:9092
+  consumer:
+    - id: start_game_settle_game_event
+      topic:
+        - start_game_settle_game_event
+      client_id: start_game_settle_game_event.client.id
+      group_id: start_game_settle_game_event.group.id
+  producer:
+    client_id:  executors
+    transactional_id: executors-transactions
+  topic:
+    mappings:
+      - id: start_game_settle_game_event
+        topic_name: start_game_settle_game_event
+        partitions: 2
+
+executors_config:
+  number_of_executors: 20
+  keypair_path: "../keypair/vortex-contracts-keypair.json"
+
+event_queue_config:
+  queue_size: 6000

@@ -5,6 +5,7 @@ use conf::{config_types::ServerConfiguration, configuration};
 use constants::SOLANA_DEVNET_URL;
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
+use log::info;
 use model::{EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
 use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
@@ -72,7 +73,7 @@ async fn main()   {
         Some(bet_settlement_event) =>  {
           // session id will always be of length 21 so we can enforce the length
           
-          
+          println!("Starting execution to SettleBet for game_id={:?} session_id={:?} by executor={:?}" , bet_settlement_event.game_id.clone() , bet_settlement_event.session_id.clone() , executor.executor_id);
           if bet_settlement_event.session_id.len() == 21 {
             let game_id_bytes = Uuid::parse_str(&bet_settlement_event.game_id).unwrap().to_bytes_le();
             let user_id_bytes = Uuid::parse_str(&bet_settlement_event.user_id).unwrap().to_bytes_le();
