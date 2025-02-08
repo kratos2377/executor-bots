@@ -9,8 +9,8 @@ kafka:
     - id: start_game_settle_game_event
       topic:
         - start_game_settle_game_event
-      client_id: start_game_settle_game_event.client.id
-      group_id: start_game_settle_game_event.group.id
+      client_id: start_game_settle_game_event.new.client.id
+      group_id: start_game_settle_game_event.new.group.id
   producer:
     client_id:  executors
     transactional_id: executors-transactions

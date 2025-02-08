@@ -45,37 +45,37 @@ impl BetSettleExecutor {
 
     pub async fn produce_event_to_kafka_topic(&self , game_bet_events: Vec<GameUserBetSettleEvent> ) -> Result<(), KafkaError> {
        
-        self.producer.begin_transaction().unwrap();
+    //     let _  = self.producer.begin_transaction();
 
-        let kafka_result = future::try_join_all(game_bet_events.iter().map(|event| async move {
-          let publish_topic = if event.is_error {
-            GAME_BET_SETTLED_ERROR
-          } else   { GAME_BET_SETTLED };
-            let converted_string_event = serde_json::to_string(event).unwrap();
+    //     let kafka_result = future::try_join_all(game_bet_events.iter().map(|event| async move {
+    //       let publish_topic = if event.is_error {
+    //         GAME_BET_SETTLED_ERROR
+    //       } else   { GAME_BET_SETTLED };
+    //         let converted_string_event = serde_json::to_string(event).unwrap();
             
-            let delivery_result = self.producer
-            .send(
-                FutureRecord::to(&publish_topic)
-                        .payload(&converted_string_event)
-                        .key("game_bet_settle_result"),
-                Duration::from_secs(2),
-            )
-            .await;
+    //         let delivery_result = self.producer
+    //         .send(
+    //             FutureRecord::to(&publish_topic)
+    //                     .payload(&converted_string_event)
+    //                     .key("game_bet_settle_result"),
+    //             Duration::from_secs(2),
+    //         )
+    //         .await;
     
-        // This will be executed when the result is received.
-      //  println!("Delivery status for message {} received", i);
-        delivery_result
+    //     // This will be executed when the result is received.
+    //   //  println!("Delivery status for message {} received", i);
+    //     delivery_result
     
-        })
+    //     })
     
-        ).await;
+    //     ).await;
     
-        match kafka_result {
-            Ok(_) => (),
-            Err(e) => return Err(e.0.into()),
-        }
+    //     match kafka_result {
+    //         Ok(_) => (),
+    //         Err(e) => return Err(e.0.into()),
+    //     }
     
-        self.producer.commit_transaction(Timeout::from(Duration::from_secs(1))).unwrap(); 
+    //     self.producer.commit_transaction(Timeout::from(Duration::from_secs(2))).unwrap(); 
     
         Ok(())
     }

@@ -27,11 +27,17 @@ impl EventQueue {
 
         let (sn , rn) = tokio::sync::mpsc::channel::<EventRecord>(10000);
 
+        let mut executor_queue_ind = ArrayQueue::new(30);
+
+        for ind in 0..20 {
+            executor_queue_ind.push(ind);
+        }
+
         Self {
             events_queue: ArrayQueue::new(6000),
             executors_senders: Vec::with_capacity(20),
             //Change this to a lock free concurrent queue
-            executors_queue: ArrayQueue::new(30),
+            executors_queue: executor_queue_ind,
             executors_order_listener: Some(rn),
             event_queue_sender: sn,
         }

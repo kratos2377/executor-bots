@@ -57,6 +57,8 @@ impl Wallet {
     ) -> VortexSdkResult<VersionedTransaction> {
         message.set_recent_blockhash(recent_block_hash);
         let signer: &dyn Signer = self.signer.as_ref();
+       
+
         let res = VersionedTransaction::try_new(message, &[signer]);
 
         if res.is_err() {

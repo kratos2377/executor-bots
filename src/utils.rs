@@ -49,7 +49,7 @@ pub fn get_game_vault_address( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubk
 pub fn get_vortex_state_account() -> &'static Pubkey {
     VORTEX_STATE_ACCOUNT.get_or_init(|| {
         let (state_account, _seed) =
-            Pubkey::find_program_address(&[&b"vortex_state"[..]], &PROGRAM_ID);
+            Pubkey::find_program_address(&[b"vortex_state"], &PROGRAM_ID);
         state_account
     })
 }
@@ -58,7 +58,7 @@ pub fn get_vortex_state_account() -> &'static Pubkey {
 pub fn get_vortex_signer_account() -> &'static Pubkey {
     VORTEX_SIGNER_ACCOUNT.get_or_init(|| {
         let (signer_account, _seed) =
-            Pubkey::find_program_address(&[&b"vortex_signer"[..]], &PROGRAM_ID);
+            Pubkey::find_program_address(&[b"vortex_signer"], &PROGRAM_ID);
         signer_account
     })
 }
@@ -66,7 +66,7 @@ pub fn get_vortex_signer_account() -> &'static Pubkey {
 
 
 pub fn derive_vortex_signer() -> Pubkey {
-    let (account, _seed) = Pubkey::find_program_address(&[&b"vortex_signer"[..]], &PROGRAM_ID);
+    let (account, _seed) = Pubkey::find_program_address(&[b"vortex_signer"], &PROGRAM_ID);
     account
 }
 

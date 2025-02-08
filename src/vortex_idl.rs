@@ -847,6 +847,7 @@ pub mod accounts {
         pub player_total_bet: Pubkey,
         pub user_bet: Pubkey,
         pub game: Pubkey,
+        pub game_mint: Pubkey,
         pub game_vault: Pubkey,
         pub user_token_account: Pubkey,
         pub admin: Pubkey,
@@ -884,6 +885,11 @@ pub mod accounts {
                     pubkey: self.game,
                     is_signer: false,
                     is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: self.game_mint,
+                    is_signer: false,
+                    is_writable: false,
                 },
                 AccountMeta {
                     pubkey: self.game_vault,

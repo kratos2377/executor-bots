@@ -1,12 +1,16 @@
 use solana_sdk::pubkey::Pubkey;
 
-pub const PROGRAM_ID: Pubkey = solana_sdk::pubkey!("dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH");
+pub const PROGRAM_ID: Pubkey = solana_sdk::pubkey!("144ZWfwr8vXDa51sQpVeJ2vo4ZBMhyqx8iWWANEg5VWp");
+
+pub const DEFAULT_PROGRAM_ID: Pubkey = solana_sdk::pubkey!("11111111111111111111111111111111");
 
 pub const TOKEN_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 
 pub const SOLANA_DEVNET_URL: &str = "https://api.devnet.solana.com";
+
+pub const SOL_MINT_ADDRESS: Pubkey = solana_sdk::pubkey!("So11111111111111111111111111111111111111112");
 
 
 //Kafka TOpics

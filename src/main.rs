@@ -10,7 +10,7 @@ use model::{EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONS
 use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
+use solana_sdk::{commitment_config::CommitmentLevel, pubkey::Pubkey, signature::Keypair, signer::{EncodableKey, Signer}};
 use tokio::{spawn, sync::{mpsc::{Receiver, Sender}, Mutex}, task::JoinHandle};
 use tracing::{error, warn};
 use transaction::get_settle_all_games_instruction;
@@ -34,6 +34,7 @@ pub mod types;
 pub mod wallet;
 pub mod blockhash_subscriber;
 pub mod executor_rpc_client;
+pub mod remaining_account;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
 
@@ -63,7 +64,8 @@ async fn main()   {
     let mut executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone(),
                                 RpcClient::new(SOLANA_DEVNET_URL.to_string()) , vortex_keypair  ).await;
 
- 
+    
+    println!("Initialized executor={:?} with index={:?}" , executor.executor_id.clone() , executor.executor_index.clone());
     event_queue.add_new_executor(ind.clone(), executor.executor_event_sender.clone());
 
 
@@ -87,26 +89,33 @@ async fn main()   {
             //Add Solana instruction creator 
               let tx = if bet_settlement_event.is_valid {
   
-                get_settle_all_games_instruction(*get_vortex_signer_account() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+                get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
   
               } else {
-                get_settle_all_games_instruction(*get_vortex_signer_account() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+                get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
               };
 
 
+              
              let res =  if tx.is_ok() {
                   let tx_record = tx.unwrap();
 
-                  executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig::default()).await
+           executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig{ skip_preflight: false, 
+                    preflight_commitment: Some(CommitmentLevel::Processed), encoding: None, max_retries: None, min_context_slot: None }).await
+
+
               } else {
                 Err(VortexSdkError::ErrorWhileParsingTransactionRecord)
               };
 
 
           // Add success/failure producer logic
+      
 
 
          let kafka_payload_event = if res.is_err() {
+          println!("Recieved error while executing transaction");
+          println!("{:?}" , res.err().unwrap());
             // If error we will publish error event to kafka
             let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
                session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
@@ -167,7 +176,15 @@ async fn main()   {
 
                 if parsed_payload.is_ok() {
                   let game_bet_record: GameBetSettleKafkaPayload = parsed_payload.unwrap();
-                  event_queue.push(game_bet_record);
+                  let push_res = event_queue.push(game_bet_record);
+
+                  if push_res.is_err() {
+                    println!("Error while pushing event in event queue");
+                  } else {
+                    println!("Successfully pushed event in event queue");
+                  }
+                } else {
+                  println!("Error while parsing gamebetsettlekafkapayload event");
                 }
             },
 
@@ -178,7 +195,13 @@ async fn main()   {
 
               if parsed_payload.is_ok() {
                 let parsed_ind = parsed_payload.unwrap();
-                event_queue.executors_queue.push(parsed_ind);
+                let exec_res = event_queue.executors_queue.push(parsed_ind);
+
+                if exec_res.is_err() {
+                  println!("Error while pushing executor index");
+                } else {
+                  println!("Successfully pushed executor index");
+                }
               }
             }
 
@@ -194,11 +217,11 @@ async fn main()   {
       //Check queue and send events to executors
       let send_bet_to_executors = tokio::spawn(async  {
         loop {
-          let exec_ind = event_queue.executors_queue.pop();
-          if exec_ind.is_some() {
-            let exec_ind_rec = exec_ind.unwrap();
+          
+          if event_queue.executors_queue.len() > 0 {
     
             if event_queue.get_len() > 0   {
+              let exec_ind_rec = event_queue.executors_queue.pop().unwrap();
               let bet_event = event_queue.pop();
       
               if bet_event.is_some() {
@@ -209,6 +232,8 @@ async fn main()   {
       
               }
             }
+          } else {
+            println!("Executor queue is empty");
           }
         }
       });
@@ -218,6 +243,8 @@ async fn main()   {
 
   let game_bet_settlers_handle = init_game_bet_settle_consumers(event_queue_sender_clone, &hy_config, kafka_consumer);
 
+  hyperion_handles.push(event_queue_events_listener);
+  hyperion_handles.push(send_bet_to_executors);
   hyperion_handles.push(game_bet_settlers_handle);
 
 
@@ -355,6 +382,8 @@ pub async fn do_listen(
             match topic {
 
               START_GAME_SETTLE_EVENT=> {
+                println!("Received start game settle events");
+                println!("With payload: {:?}" , payload.clone());
                 let game_bet_payload_event_record = EventRecord {
                     payload,
                     event_type: CONSUMER_GROUP_BET_EVENT_ADD.to_string(),
@@ -362,8 +391,13 @@ pub async fn do_listen(
 
 
                   //later add logic that if push is unsuccessful that publish fail event back
-                 let _ =  consumer_event_sender.send(game_bet_payload_event_record).await;
+                 let publish_res =  consumer_event_sender.send(game_bet_payload_event_record).await;
 
+                  if publish_res.is_err() {
+                    println!("error while publishing to event queue");
+                  } else {
+                    println!("Successfully generated events");
+                  }
               
 
             }

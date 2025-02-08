@@ -206,6 +206,11 @@
           "isSigner": false
         },
         {
+          "name": "gameMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "gameVault",
           "isMut": true,
           "isSigner": false
@@ -895,6 +900,6 @@
     }
   ],
   "metadata": {
-    "address": "GnspmmmW55UpjzwUySUvNGEnTSJMyJbkieSqPXFeUdYD"
+    "address": "144ZWfwr8vXDa51sQpVeJ2vo4ZBMhyqx8iWWANEg5VWp"
   }
 }
