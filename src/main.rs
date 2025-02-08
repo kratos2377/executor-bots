@@ -1,4 +1,4 @@
-use std::{collections::{btree_map::Range, HashMap}, fs::File, net::SocketAddr, str::FromStr, sync::{atomic::Ordering, Arc}};
+use std::{collections::{btree_map::Range, HashMap}, env, fs::File, net::SocketAddr, path::PathBuf, str::FromStr, sync::{atomic::Ordering, Arc}};
 
 use axum::{response::IntoResponse, routing::get, Router};
 use conf::{config_types::ServerConfiguration, configuration};
@@ -50,6 +50,7 @@ async fn main()   {
   let event_queue_sender_clone = event_queue.event_queue_sender.clone();
   
   let mut hyperion_handles = vec![];
+
 
   let file = File::open(hy_config.executors_config.keypair_path.clone()).unwrap();
   let keypair_bytes: Vec<u8> = serde_json::from_reader(file).unwrap();
@@ -383,3 +384,6 @@ pub async fn do_listen(
 }
 
 
+fn get_current_working_dir() -> std::io::Result<PathBuf> {
+  env::current_dir()
+}

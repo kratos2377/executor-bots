@@ -22,7 +22,7 @@ kafka:
 
 executors_config:
   number_of_executors: 20
-  keypair_path: "../keypair/vortex-contracts-keypair.json"
+  keypair_path: "/home/monarch/proj/executor-bots/keypair/vortex_contracts-keypair.json"
 
 event_queue_config:
   queue_size: 6000

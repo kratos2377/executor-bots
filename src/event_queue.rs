@@ -40,7 +40,7 @@ impl EventQueue {
 
     pub fn add_new_executor(&mut self , index: usize , exec: Sender<GameBetSettleKafkaPayload>) {
 
-            self.executors_senders[index] = exec;
+            self.executors_senders.push(exec);
     }
 
 
