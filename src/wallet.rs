@@ -62,6 +62,7 @@ impl Wallet {
         let res = VersionedTransaction::try_new(message, &[signer]);
 
         if res.is_err() {
+            println!("Actual Error is: {:?}" , res.err().unwrap());
             return Err(VortexSdkError::ErrorWhileMakingVersionTransaction)
         }
 
