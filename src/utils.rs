@@ -40,7 +40,7 @@ pub fn get_player_bet_pubkey( game_id: [u8;16]  , user_betting_on_id: [u8;16] , 
 
 pub fn get_game_vault_address( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "game_vault".as_bytes() , &game_id  ,  session_id ], 
+        &[ &b"game_vault"[..] , &game_id  ,  session_id ], 
         &PROGRAM_ID).0;
 }
 

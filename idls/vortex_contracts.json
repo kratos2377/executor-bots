@@ -441,22 +441,22 @@
       "accounts": [
         {
           "name": "userBet",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "game",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "playerBet",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "gameVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -466,13 +466,13 @@
         },
         {
           "name": "to",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "vortexSigner",
           "isMut": false,
-          "isSigner": false
+          "isSigner": true
         },
         {
           "name": "systemProgram",
@@ -524,22 +524,22 @@
       "accounts": [
         {
           "name": "userBet",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "game",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "playerBet",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "gameVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -549,13 +549,13 @@
         },
         {
           "name": "to",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "vortexSigner",
           "isMut": false,
-          "isSigner": false
+          "isSigner": true
         },
         {
           "name": "systemProgram",
@@ -900,6 +900,6 @@
     }
   ],
   "metadata": {
-    "address": "144ZWfwr8vXDa51sQpVeJ2vo4ZBMhyqx8iWWANEg5VWp"
+    "address": "H6NCA1fdMTJmNuxowL11wReywiMmC6GmR4z66p2XH1ec"
   }
 }

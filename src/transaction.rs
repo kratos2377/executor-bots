@@ -30,7 +30,7 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
         game_vault: get_game_vault_address(game_id, session_id),
         vortex_state: *get_vortex_state_account(),
         to: get_user_token_account_address,
-        vortex_signer: *get_vortex_signer_account(),
+        vortex_signer: authority,
         system_program: DEFAULT_PROGRAM_ID,
         token_program: TOKEN_PROGRAM_ID,
     };
