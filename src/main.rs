@@ -44,7 +44,6 @@ async fn main()   {
   //  dotenv().ok();
 
   let kafka_consumer = kafka::consumer::init_consumers(&hy_config.kafka).unwrap();
-  let kafka_producer = kafka::producer::create_new_kafka_producer(&hy_config.kafka).unwrap();
 
   let mut event_queue = Box::leak(Box::new(EventQueue::new()));
 
@@ -61,7 +60,10 @@ async fn main()   {
   for ind in 0..hy_config.executors_config.number_of_executors {
 
     let vortex_keypair = Keypair::from_bytes(&keypair_bytes).unwrap();
-    let mut executor = BetSettleExecutor::new(kafka_producer.clone(), ind.clone() as u32, event_queue.event_queue_sender.clone(),
+
+    // let each executor have its own kafka producer
+  let kafka_producer = kafka::producer::create_new_kafka_producer(&hy_config.kafka).unwrap();
+    let mut executor = BetSettleExecutor::new(kafka_producer, ind.clone() as u32, event_queue.event_queue_sender.clone(),
                                 RpcClient::new(SOLANA_DEVNET_URL.to_string()) , vortex_keypair  ).await;
 
     
