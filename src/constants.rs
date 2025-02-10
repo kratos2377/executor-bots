@@ -1,6 +1,6 @@
 use solana_sdk::pubkey::Pubkey;
 
-pub const PROGRAM_ID: Pubkey = solana_sdk::pubkey!("3TzoTcdzN5ye6BsqjfbBTsnjz885KpHQK5muJvGCM4WA");
+pub const PROGRAM_ID: Pubkey = solana_sdk::pubkey!("Ce38cmRXjojbLhFzP2zhyXp7gJ3eRaz3mAfiAjzUMSdZ");
 
 pub const DEFAULT_PROGRAM_ID: Pubkey = solana_sdk::pubkey!("11111111111111111111111111111111");
 
