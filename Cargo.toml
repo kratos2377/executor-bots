@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anchor-lang = { version="0.29.0", features=["derive"] }
 anchor-spl = "0.29.0"
-solana-program = "1.18.22"
+solana-program = "1.16"
 axum = { version="0.7.5"}
 axum-macros = "0.4.1"
 config = "0.14.0"

@@ -441,22 +441,22 @@
       "accounts": [
         {
           "name": "userBet",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "game",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "playerBet",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "gameVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -472,7 +472,7 @@
         {
           "name": "vortexSigner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -524,22 +524,22 @@
       "accounts": [
         {
           "name": "userBet",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "game",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "playerBet",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "gameVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -555,7 +555,7 @@
         {
           "name": "vortexSigner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -649,7 +649,7 @@
           },
           {
             "name": "totalPot",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "isGameActive",
@@ -710,7 +710,7 @@
           },
           {
             "name": "moneyStaked",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "isSettled",
@@ -753,11 +753,11 @@
           },
           {
             "name": "playerStakedMoney",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "totalMoneyStakedOnPlayer",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "sessionId",
@@ -900,6 +900,6 @@
     }
   ],
   "metadata": {
-    "address": "3TzoTcdzN5ye6BsqjfbBTsnjz885KpHQK5muJvGCM4WA"
+    "address": "Ce38cmRXjojbLhFzP2zhyXp7gJ3eRaz3mAfiAjzUMSdZ"
   }
 }

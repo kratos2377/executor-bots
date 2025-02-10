@@ -21,7 +21,7 @@ use crate::{constants, vortex_idl::{self, types}};
 pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;16] , user_id: [u8;16],  user_betting_on_id: [u8;16] , session_id: &[u8;21] ,
      winner_id: [u8;16] , user_bet_wallet_key: Pubkey ) -> VortexSdkResult<VersionedMessage>{
   
-        //let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
+        let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
         let get_user_token_account_address = get_associated_token_address(&user_bet_wallet_key , &SOL_MINT_ADDRESS);
     let accounts = SettleAllBets {
         user_bet: get_user_game_bet_pubkey(game_id , user_betting_on_id , user_bet_wallet_key , session_id),
@@ -35,26 +35,24 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
         token_program: TOKEN_PROGRAM_ID,
     };
 
+    
 
     let mut account_metas = accounts.to_account_metas();
 
-    // let remaining_accounts =  RemainingAccount {
-    //     pubkey: SOL_MINT_ADDRESS,
-    //     is_writable: false,
-    //     is_signer: false,
-    // };
+    let remaining_accounts =  RemainingAccount {
+        pubkey: SOL_MINT_ADDRESS,
+        is_writable: false,
+        is_signer: false,
+    };
     
- //   accounts_tree_set.extend( [remaining_accounts.into()].iter());
- //   account_metas.extend(accounts_tree_set.into_iter().map(Into::into));
+   accounts_tree_set.extend( [remaining_accounts].iter());
+   account_metas.extend(accounts_tree_set.into_iter().map(Into::into));
   
-    let mut meta_data = account_metas;
 
-    meta_data.push(AccountMeta{ pubkey: SOL_MINT_ADDRESS, is_signer: false, is_writable: false });
-    meta_data.push(AccountMeta { pubkey: derive_vortex_signer(), is_signer: true, is_writable: false });
 
     let ix = Instruction {
         program_id: constants::PROGRAM_ID,
-        accounts: meta_data,
+        accounts: account_metas,
         data: InstructionData::data(&vortex_idl::instructions::SettleAllBets {
             game_id,
             user_betting_on_id: user_betting_on_id,

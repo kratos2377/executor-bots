@@ -348,7 +348,7 @@ pub mod accounts {
     pub struct Game {
         pub game_id: [u8; 16],
         pub pubkey: Pubkey,
-        pub total_pot: f64,
+        pub total_pot: u64,
         pub is_game_active: bool,
         pub game_vault_key: Pubkey,
         pub is_settled: bool,
@@ -411,7 +411,7 @@ pub mod accounts {
         pub user_bet_wallet_key: Pubkey,
         pub user_betting_on_id: [u8; 16],
         pub bet_type: BetType,
-        pub money_staked: f64,
+        pub money_staked: u64,
         pub is_settled: bool,
         pub session_id: [u8; 21],
     }
@@ -470,8 +470,8 @@ pub mod accounts {
     pub struct PlayerTotalBet {
         pub game_id: [u8; 16],
         pub user_betting_on_id: [u8; 16],
-        pub player_staked_money: f64,
-        pub total_money_staked_on_player: f64,
+        pub player_staked_money: u64,
+        pub total_money_staked_on_player: u64,
         pub session_id: [u8; 21],
     }
     #[automatically_derived]
@@ -1191,22 +1191,22 @@ pub mod accounts {
                 AccountMeta {
                     pubkey: self.user_bet,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.game,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.player_bet,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.game_vault,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.vortex_state,
@@ -1220,7 +1220,7 @@ pub mod accounts {
                 },
                 AccountMeta {
                     pubkey: self.vortex_signer,
-                    is_signer: true,
+                    is_signer: false,
                     is_writable: false,
                 },
                 AccountMeta {
@@ -1297,22 +1297,22 @@ pub mod accounts {
                 AccountMeta {
                     pubkey: self.user_bet,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.game,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.player_bet,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.game_vault,
                     is_signer: false,
-                    is_writable: false,
+                    is_writable: true,
                 },
                 AccountMeta {
                     pubkey: self.vortex_state,
@@ -1326,7 +1326,7 @@ pub mod accounts {
                 },
                 AccountMeta {
                     pubkey: self.vortex_signer,
-                    is_signer: true,
+                    is_signer: false,
                     is_writable: false,
                 },
                 AccountMeta {
