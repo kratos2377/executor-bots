@@ -113,7 +113,7 @@
         },
         {
           "name": "totalMoneyStaked",
-          "type": "f64"
+          "type": "u64"
         }
       ]
     },
@@ -271,7 +271,7 @@
         },
         {
           "name": "totalMoneyStaked",
-          "type": "f64"
+          "type": "u64"
         }
       ]
     },
@@ -354,7 +354,7 @@
         },
         {
           "name": "moneyStaked",
-          "type": "f64"
+          "type": "u64"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "name": "moneyStaked",
-          "type": "f64"
+          "type": "u64"
         }
       ]
     },
@@ -900,6 +900,6 @@
     }
   ],
   "metadata": {
-    "address": "Ce38cmRXjojbLhFzP2zhyXp7gJ3eRaz3mAfiAjzUMSdZ"
+    "address": "6bFxEsbjpsMB4ZKLJYpgGyGeB3zzZdgn676HAmea9LDP"
   }
 }

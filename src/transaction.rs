@@ -8,7 +8,7 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::message::{v0, VersionedMessage};
 pub use solana_sdk::{address_lookup_table::AddressLookupTableAccount, pubkey::Pubkey};
 use anchor_lang::{ InstructionData};
-use crate::constants::{DEFAULT_PROGRAM_ID, PROGRAM_ID, SOL_MINT_ADDRESS, TOKEN_PROGRAM_ID};
+use crate::constants::{DEFAULT_PROGRAM_ID, PROGRAM_ID, TOKEN_PROGRAM_ID, USDC_MINT_ADDRESS};
 use crate::remaining_account::RemainingAccount;
 use crate::types::VortexSdkResult;
 use crate::utils::{derive_vortex_signer, get_game_pubkey, get_game_vault_address, get_player_bet_pubkey, get_user_game_bet_pubkey, get_vortex_signer_account, get_vortex_state_account};
@@ -22,7 +22,7 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
      winner_id: [u8;16] , user_bet_wallet_key: Pubkey ) -> VortexSdkResult<VersionedMessage>{
   
         let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
-        let get_user_token_account_address = get_associated_token_address(&user_bet_wallet_key , &SOL_MINT_ADDRESS);
+        let get_user_token_account_address = get_associated_token_address(&user_bet_wallet_key , &USDC_MINT_ADDRESS);
     let accounts = SettleAllBets {
         user_bet: get_user_game_bet_pubkey(game_id , user_betting_on_id , user_bet_wallet_key , session_id),
         game: get_game_pubkey(game_id, session_id),
@@ -40,7 +40,7 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
     let mut account_metas = accounts.to_account_metas();
 
     let remaining_accounts =  RemainingAccount {
-        pubkey: SOL_MINT_ADDRESS,
+        pubkey: USDC_MINT_ADDRESS,
         is_writable: false,
         is_signer: false,
     };

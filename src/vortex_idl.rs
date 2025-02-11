@@ -36,7 +36,7 @@ pub mod instructions {
     pub struct InitializeGame {
         pub game_id: [u8; 16],
         pub session_id: [u8; 21],
-        pub total_money_staked: f64,
+        pub total_money_staked: u64,
     }
     #[automatically_derived]
     impl anchor_lang::Discriminator for InitializeGame {
@@ -71,7 +71,7 @@ pub mod instructions {
         pub game_id: [u8; 16],
         pub user_betting_on_id: [u8; 16],
         pub session_id: [u8; 21],
-        pub total_money_staked: f64,
+        pub total_money_staked: u64,
     }
     #[automatically_derived]
     impl anchor_lang::Discriminator for InitializePlayerBet {
@@ -84,7 +84,7 @@ pub mod instructions {
         pub game_id: [u8; 16],
         pub user_betting_on_id: [u8; 16],
         pub session_id: [u8; 21],
-        pub money_staked: f64,
+        pub money_staked: u64,
     }
     #[automatically_derived]
     impl anchor_lang::Discriminator for UserBet {
@@ -97,7 +97,7 @@ pub mod instructions {
         pub game_id: [u8; 16],
         pub user_betting_on_id: [u8; 16],
         pub session_id: [u8; 21],
-        pub money_staked: f64,
+        pub money_staked: u64,
     }
     #[automatically_derived]
     impl anchor_lang::Discriminator for UpdateUserBet {
