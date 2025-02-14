@@ -33,6 +33,7 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
         vortex_signer: derive_vortex_signer(),
         system_program: DEFAULT_PROGRAM_ID,
         token_program: TOKEN_PROGRAM_ID,
+        receiver_public_key: todo!(),
     };
 
     

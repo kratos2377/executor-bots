@@ -118,76 +118,6 @@
       ]
     },
     {
-      "name": "updateGameStatus",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "gameId",
-          "type": {
-            "array": [
-              "u8",
-              16
-            ]
-          }
-        },
-        {
-          "name": "sessionId",
-          "type": {
-            "array": [
-              "u8",
-              21
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "updateGameIsSettledStatus",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "gameId",
-          "type": {
-            "array": [
-              "u8",
-              16
-            ]
-          }
-        },
-        {
-          "name": "sessionId",
-          "type": {
-            "array": [
-              "u8",
-              21
-            ]
-          }
-        }
-      ]
-    },
-    {
       "name": "initializePlayerBet",
       "accounts": [
         {
@@ -437,6 +367,76 @@
       ]
     },
     {
+      "name": "updateGameStatus",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vortexSigner",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "gameId",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "sessionId",
+          "type": {
+            "array": [
+              "u8",
+              21
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "updateGameIsSettledStatus",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vortexSigner",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "gameId",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "sessionId",
+          "type": {
+            "array": [
+              "u8",
+              21
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "settleAllBetsForInvalidGame",
       "accounts": [
         {
@@ -466,6 +466,11 @@
         },
         {
           "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverPublicKey",
           "isMut": false,
           "isSigner": false
         },
@@ -549,6 +554,11 @@
         },
         {
           "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverPublicKey",
           "isMut": false,
           "isSigner": false
         },
@@ -900,6 +910,6 @@
     }
   ],
   "metadata": {
-    "address": "6bFxEsbjpsMB4ZKLJYpgGyGeB3zzZdgn676HAmea9LDP"
+    "address": "7erCt6RRYepGp2TxGKRiHKH3W5hza4fcDsSfBNqbwXE5"
   }
 }
