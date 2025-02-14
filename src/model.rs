@@ -13,6 +13,18 @@ pub struct GameBetSettleKafkaPayload {
 }
 
 
+#[derive(Clone , Serialize , Deserialize)]
+pub struct ExecutorGameOverEvent {
+    pub game_id: String,
+    pub session_id: String,
+}
+
+#[derive(Clone , Serialize , Deserialize)]
+pub struct EventQueueRecords {
+    pub game_settle_record: Option<GameBetSettleKafkaPayload>,
+    pub game_over_record: Option<ExecutorGameOverEvent>
+}
+
 
 #[derive(Clone , Serialize , Deserialize)]
 pub struct EventRecord {
@@ -35,3 +47,4 @@ pub struct GameUserBetSettleEvent {
 //Event Types
 pub const EXECUTOR_INDEX_ADD: &str = "executor_index_add";
 pub const CONSUMER_GROUP_BET_EVENT_ADD: &str = "consumer_group_bet_event_add";
+pub const GAME_OVER_EVENT: &str = "game_over_event";

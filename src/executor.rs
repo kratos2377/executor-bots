@@ -6,7 +6,7 @@ use solana_client::nonblocking::rpc_client::{self, RpcClient};
 use solana_sdk::signature::Keypair;
 use tokio::sync::mpsc::{Receiver, Sender};
 use futures_util::future;
-use crate::{constants::{GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR}, executor_rpc_client::{Context, VortexExecutorClient}, model::{EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent}, wallet::Wallet};
+use crate::{constants::{GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR}, executor_rpc_client::{Context, VortexExecutorClient}, model::{EventQueueRecords, EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent}, wallet::Wallet};
 
 
 pub struct BetSettleExecutor {
@@ -16,9 +16,9 @@ pub struct BetSettleExecutor {
     pub event_queue_sender: Sender<EventRecord>,
     pub executor_index: u32,
     // this will listen to events that need to be settled
-    pub executor_event_reciever: Receiver<GameBetSettleKafkaPayload>,
+    pub executor_event_reciever: Receiver<EventQueueRecords>,
     // this will go in event_queue vec so that event_queue can send events to executors
-    pub executor_event_sender: Sender<GameBetSettleKafkaPayload>,
+    pub executor_event_sender: Sender<EventQueueRecords>,
 
     //Vortex Client connection to execute transactions
     pub vortex_exec_client: VortexExecutorClient,
@@ -27,7 +27,7 @@ pub struct BetSettleExecutor {
 
 impl BetSettleExecutor {
     pub async fn new(producer: FutureProducer , index: u32 , event_queue_sender: Sender<EventRecord> , rpc_client: RpcClient , authority: Keypair) -> Self {
-        let (exsn , exrn) = tokio::sync::mpsc::channel::<GameBetSettleKafkaPayload>(10);
+        let (exsn , exrn) = tokio::sync::mpsc::channel::<EventQueueRecords>(10);
 
         Self { 
             

@@ -6,14 +6,14 @@ use constants::SOLANA_DEVNET_URL;
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
 use log::info;
-use model::{EventRecord, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
+use model::{EventQueueRecords, EventRecord, ExecutorGameOverEvent, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD, GAME_OVER_EVENT};
 use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_sdk::{commitment_config::CommitmentLevel, pubkey::Pubkey, signature::Keypair, signer::{EncodableKey, Signer}};
 use tokio::{spawn, sync::{mpsc::{Receiver, Sender}, Mutex}, task::JoinHandle};
 use tracing::{error, warn};
-use transaction::get_settle_all_games_instruction;
+use transaction::{get_change_game_over_status_instruction, get_settle_all_games_instruction, get_settle_bet_instruction_for_invalid_game};
 use types::VortexSdkError;
 use utils::get_vortex_signer_account;
 use uuid::Uuid;
@@ -37,6 +37,7 @@ pub mod executor_rpc_client;
 pub mod remaining_account;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
+pub const EXECUTOR_GAME_OVER_EVENT: &str = "executor_game_over_event";
 
 #[tokio::main]
 async fn main()   {
@@ -75,72 +76,143 @@ async fn main()   {
      loop {
        match executor.executor_event_reciever.recv().await {
 
-        Some(bet_settlement_event) =>  {
+        Some(event_record) =>  {
+
+          if event_record.game_settle_record.is_some() {
+            let bet_settlement_event = event_record.game_settle_record.unwrap();
           // session id will always be of length 21 so we can enforce the length
           
-          println!("Starting execution to SettleBet for game_id={:?} session_id={:?} by executor={:?}" , bet_settlement_event.game_id.clone() , bet_settlement_event.session_id.clone() , executor.executor_id);
-          if bet_settlement_event.session_id.len() == 21 {
-            let game_id_bytes = Uuid::parse_str(&bet_settlement_event.game_id).unwrap().to_bytes_le();
-            let user_id_bytes = Uuid::parse_str(&bet_settlement_event.user_id).unwrap().to_bytes_le();
-            let user_betting_on_bytes = Uuid::parse_str(&bet_settlement_event.user_betting_on).unwrap().to_bytes_le();
-            
-          let session_id_bytes = bet_settlement_event.session_id.as_bytes().try_into().unwrap();
-            let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
-  
-            let user_bet_wallet_key = Pubkey::from_str( &bet_settlement_event.user_wallet_key).unwrap();
-            //Add Solana instruction creator 
-              let tx = if bet_settlement_event.is_valid {
-  
-                get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
-  
-              } else {
-                get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
-              };
-
-
+            println!("Starting execution to SettleBet for game_id={:?} session_id={:?} by executor={:?}" , bet_settlement_event.game_id.clone() , bet_settlement_event.session_id.clone() , executor.executor_id);
+            if bet_settlement_event.session_id.len() == 21 {
+              let game_id_bytes = Uuid::parse_str(&bet_settlement_event.game_id).unwrap().to_bytes_le();
+              let user_id_bytes = Uuid::parse_str(&bet_settlement_event.user_id).unwrap().to_bytes_le();
+              let user_betting_on_bytes = Uuid::parse_str(&bet_settlement_event.user_betting_on).unwrap().to_bytes_le();
               
-             let res =  if tx.is_ok() {
-                  let tx_record = tx.unwrap();
+            let session_id_bytes = bet_settlement_event.session_id.as_bytes().try_into().unwrap();
+              let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
+    
+              let user_bet_wallet_key = Pubkey::from_str( &bet_settlement_event.user_wallet_key).unwrap();
+              //Add Solana instruction creator 
+                let tx = if bet_settlement_event.is_valid {
+    
+                  get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+    
+                } else {
 
-           executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig{ skip_preflight: false, 
-                    preflight_commitment: Some(CommitmentLevel::Processed), encoding: None, max_retries: None, min_context_slot: None }).await
-
-
-              } else {
-                Err(VortexSdkError::ErrorWhileParsingTransactionRecord)
-              };
-
-
-          // Add success/failure producer logic
-      
-
-
-         let kafka_payload_event = if res.is_err() {
-          println!("Recieved error while executing transaction");
-          println!("{:?}" , res.err().unwrap());
-            // If error we will publish error event to kafka
-            let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
-               session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
-          
-              kafka_event
-          } else {
-
-           let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
-              session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
-
-              kafka_event
-          };
-
-          let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+                  // We have to send one more field if game is invalid whether the instruction is for player or simple user
+                  get_settle_bet_instruction_for_invalid_game(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key, true ).await
+                };
   
+  
+                
+               let res =  if tx.is_ok() {
+                    let tx_record = tx.unwrap();
+  
+             executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig{ skip_preflight: false, 
+                      preflight_commitment: Some(CommitmentLevel::Processed), encoding: None, max_retries: None, min_context_slot: None }).await
+  
+  
+                } else {
+                  Err(VortexSdkError::ErrorWhileParsingTransactionRecord)
+                };
+  
+  
+            // Add success/failure producer logic
+        
+  
+  
+           let kafka_payload_event = if res.is_err() {
+            println!("Recieved error while executing transaction");
+            println!("{:?}" , res.err().unwrap());
+            
+              // If error we will publish error event to kafka
+              let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+                 session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
+            
+                kafka_event
+            } else {
+             let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+                session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
+  
+                kafka_event
+            };
+  
+            let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+    
+            }
+  
+  
+  
+            //Once event is producer let event queue know the executor is available to pick up new task
+            let new_event_record = EventRecord { payload: executor.executor_index.to_string(), event_type: EXECUTOR_INDEX_ADD.to_string() };
+            let _ = executor.event_queue_sender.send(new_event_record).await;
+  
+          } else if event_record.game_over_record.is_some() {
+              
+
+            let game_over_record_event = event_record.game_over_record.unwrap();
+            // session id will always be of length 21 so we can enforce the length
+            
+              println!("Starting execution to set status for game_id={:?} session_id={:?} by executor={:?} to over" , game_over_record_event.game_id.clone() , game_over_record_event.session_id.clone() , executor.executor_id);
+              if game_over_record_event.session_id.len() == 21 {
+                let game_id_bytes = Uuid::parse_str(&game_over_record_event.game_id).unwrap().to_bytes_le();
+                
+              let session_id_bytes = game_over_record_event.session_id.as_bytes().try_into().unwrap();
+      
+                //Add Solana instruction creator 
+                  let tx = get_change_game_over_status_instruction(*executor.vortex_exec_client.wallet().authority(), game_id_bytes, session_id_bytes).await;
+    
+    
+                  
+                 let res =  if tx.is_ok() {
+                      let tx_record = tx.unwrap();
+    
+               executor.vortex_exec_client.sign_and_send_with_config( tx_record, None, RpcSendTransactionConfig{ skip_preflight: false, 
+                        preflight_commitment: Some(CommitmentLevel::Processed), encoding: None, max_retries: None, min_context_slot: None }).await
+    
+    
+                  } else {
+                    Err(VortexSdkError::ErrorWhileParsingTransactionRecord)
+                  };
+    
+    
+              // Add success/failure producer logic
+          
+                  // Kafka Event will be generated to tell whether instruction was successful or not 
+                  // If yes only then ExecutorBots will start getting instructions for SettleEvents
+    
+            //  let kafka_payload_event = if res.is_err() {
+            //   println!("Recieved error while executing transaction");
+            //   println!("{:?}" , res.err().unwrap());
+            //     // If error we will publish error event to kafka
+            //     let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+            //        session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
+              
+            //       kafka_event
+            //   } else {
+    
+            //    let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+            //       session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
+    
+            //       kafka_event
+            //   };
+    
+            //   let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+      
+              }
+    
+    
+    
+              //Once event is producer let event queue know the executor is available to pick up new task
+              let new_event_record = EventRecord { payload: executor.executor_index.to_string(), event_type: EXECUTOR_INDEX_ADD.to_string() };
+              let _ = executor.event_queue_sender.send(new_event_record).await;
+
+          } else {
+            println!("Invalid EventRecordReceieved")
           }
 
 
-
-          //Once event is producer let event queue know the executor is available to pick up new task
-          let new_event_record = EventRecord { payload: executor.executor_index.to_string(), event_type: EXECUTOR_INDEX_ADD.to_string() };
-          let _ = executor.event_queue_sender.send(new_event_record).await;
-
+        
         }
 
         None => {}
@@ -178,7 +250,7 @@ async fn main()   {
 
                 if parsed_payload.is_ok() {
                   let game_bet_record: GameBetSettleKafkaPayload = parsed_payload.unwrap();
-                  let push_res = event_queue.push(game_bet_record);
+                  let push_res = event_queue.push(EventQueueRecords { game_settle_record: Some(game_bet_record), game_over_record: None });
 
                   if push_res.is_err() {
                     println!("Error while pushing event in event queue");
@@ -204,6 +276,24 @@ async fn main()   {
                 } else {
                   println!("Successfully pushed executor index");
                 }
+              }
+            },
+
+            GAME_OVER_EVENT => {
+              let parsed_payload = serde_json::from_str(&event_record.payload);
+
+
+              if parsed_payload.is_ok() {
+                let executor_game_over_record: ExecutorGameOverEvent = parsed_payload.unwrap();
+                let push_res = event_queue.push(EventQueueRecords { game_settle_record: None, game_over_record: Some(executor_game_over_record) });
+
+                if push_res.is_err() {
+                  println!("Error while pushing game_over_event event in event queue");
+                } else {
+                  println!("Successfully pushed event in event queue");
+                }
+              } else {
+                println!("Error while parsing gamebetsettlekafkapayload event");
               }
             }
 
@@ -402,7 +492,26 @@ pub async fn do_listen(
                   }
               
 
-            }
+            },
+
+            EXECUTOR_GAME_OVER_EVENT => {
+              println!("Received executor game over event");
+              println!("With payload: {:?}" , payload.clone());
+              let exec_game_over_event = EventRecord {
+                  payload,
+                  event_type: CONSUMER_GROUP_BET_EVENT_ADD.to_string(),
+              };
+
+
+                //later add logic that if push is unsuccessful that publish fail event back
+               let publish_res =  consumer_event_sender.send(exec_game_over_event).await;
+
+                if publish_res.is_err() {
+                  println!("error while publishing to event queue");
+                } else {
+                  println!("Successfully generated events");
+                }
+            },
 
         
                 _ => {

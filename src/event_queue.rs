@@ -4,15 +4,15 @@ use crossbeam::{queue::ArrayQueue, utils::CachePadded};
 use futures::future::Join;
 use tokio::{sync::mpsc::{Receiver, Sender}, task::JoinHandle};
 
-use crate::model::{EventRecord, GameBetSettleKafkaPayload, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD};
+use crate::model::{EventQueueRecords, EventRecord};
 
 
 
 
 pub struct EventQueue {
 
-    pub events_queue: ArrayQueue<GameBetSettleKafkaPayload>,
-    pub executors_senders: Vec<Sender<GameBetSettleKafkaPayload>>,
+    pub events_queue: ArrayQueue<EventQueueRecords>,
+    pub executors_senders: Vec<Sender<EventQueueRecords>>,
     pub executors_queue: ArrayQueue<usize>,
     pub executors_order_listener: Option<Receiver<EventRecord>>,
     pub event_queue_sender: Sender<EventRecord>
@@ -44,7 +44,7 @@ impl EventQueue {
 
     }
 
-    pub fn add_new_executor(&mut self , index: usize , exec: Sender<GameBetSettleKafkaPayload>) {
+    pub fn add_new_executor(&mut self , index: usize , exec: Sender<EventQueueRecords>) {
 
             self.executors_senders.push(exec);
     }
@@ -57,13 +57,13 @@ impl EventQueue {
 
 
 
-    pub fn push(&self, event: GameBetSettleKafkaPayload) -> Result<(), &'static str> {
+    pub fn push(&self, event: EventQueueRecords) -> Result<(), &'static str> {
         self.events_queue.push(event);
         Ok(())
     }
 
     // Pop an event using atomic operations (immutable `&self`)
-    pub fn pop(&self) -> Option<GameBetSettleKafkaPayload> {
+    pub fn pop(&self) -> Option<EventQueueRecords> {
        self.events_queue.pop()     
     }
 
