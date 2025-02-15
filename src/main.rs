@@ -2,11 +2,11 @@ use std::{collections::{btree_map::Range, HashMap}, env, fs::File, net::SocketAd
 
 use axum::{response::IntoResponse, routing::get, Router};
 use conf::{config_types::ServerConfiguration, configuration};
-use constants::SOLANA_DEVNET_URL;
+use constants::{EXECUTOR_GAME_OVER_STATUS_SETTLED, GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR, SOLANA_DEVNET_URL};
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
 use log::info;
-use model::{EventQueueRecords, EventRecord, ExecutorGameOverEvent, GameBetSettleKafkaPayload, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD, GAME_OVER_EVENT};
+use model::{EventQueueRecords, EventRecord, ExecutorGameOverEvent, GameBetSettleKafkaPayload, GameStatusChangeEvent, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD, GAME_OVER_EVENT};
 use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -121,23 +121,23 @@ async fn main()   {
         
   
   
-           let kafka_payload_event = if res.is_err() {
+           let (kafka_payload_event,kafka_topic) = if res.is_err() {
             println!("Recieved error while executing transaction");
             println!("{:?}" , res.err().unwrap());
             
               // If error we will publish error event to kafka
-              let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
+              let kafka_event  =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
                  session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
             
-                kafka_event
+                (kafka_event , GAME_BET_SETTLED_ERROR)
             } else {
              let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
                 session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
   
-                kafka_event
+                (kafka_event , GAME_BET_SETTLED)
             };
   
-            let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+            let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event] , vec![] , kafka_topic ).await;
     
             }
   
@@ -181,23 +181,25 @@ async fn main()   {
                   // Kafka Event will be generated to tell whether instruction was successful or not 
                   // If yes only then ExecutorBots will start getting instructions for SettleEvents
     
-            //  let kafka_payload_event = if res.is_err() {
-            //   println!("Recieved error while executing transaction");
-            //   println!("{:?}" , res.err().unwrap());
-            //     // If error we will publish error event to kafka
-            //     let kafka_event =   GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
-            //        session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: true };
+             let (kafka_payload_event , kafka_topic) = if res.is_err() {
+              println!("Recieved error while executing transaction for game over event");
+              println!("{:?}" , res.err().unwrap());
+                // If error we will publish error event to kafka
+                let kafka_event =   GameStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
+                   session_id: game_over_record_event.session_id.clone(), winner_id: game_over_record_event.winner_id.clone(), is_game_valid: game_over_record_event.is_game_valid.clone(),
+                    is_error: true };
               
-            //       kafka_event
-            //   } else {
+                 ( kafka_event, EXECUTOR_GAME_OVER_STATUS_SETTLED)
+              } else {
     
-            //    let kafka_event =  GameUserBetSettleEvent { game_id: bet_settlement_event.game_id,
-            //       session_id: bet_settlement_event.session_id, user_id: bet_settlement_event.user_id, winner_id: bet_settlement_event.winner_id, is_game_valid: bet_settlement_event.is_valid, is_error: false };
+               let kafka_event =   GameStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
+                session_id: game_over_record_event.session_id.clone(), winner_id: game_over_record_event.winner_id.clone(), is_game_valid: game_over_record_event.is_game_valid.clone(),
+                 is_error: false };
     
-            //       kafka_event
-            //   };
+                 ( kafka_event , EXECUTOR_GAME_OVER_STATUS_SETTLED)
+              };
     
-            //   let _ = executor.produce_event_to_kafka_topic(vec![kafka_payload_event]).await;
+              let _ = executor.produce_event_to_kafka_topic(vec![] , vec![kafka_payload_event] , kafka_topic).await;
       
               }
     
@@ -499,7 +501,7 @@ pub async fn do_listen(
               println!("With payload: {:?}" , payload.clone());
               let exec_game_over_event = EventRecord {
                   payload,
-                  event_type: CONSUMER_GROUP_BET_EVENT_ADD.to_string(),
+                  event_type: GAME_OVER_EVENT.to_string(),
               };
 
 

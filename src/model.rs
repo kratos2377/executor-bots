@@ -17,6 +17,8 @@ pub struct GameBetSettleKafkaPayload {
 pub struct ExecutorGameOverEvent {
     pub game_id: String,
     pub session_id: String,
+    pub winner_id: String,
+    pub is_game_valid: bool
 }
 
 #[derive(Clone , Serialize , Deserialize)]
@@ -38,6 +40,17 @@ pub struct GameUserBetSettleEvent {
     pub game_id: String,
     pub session_id: String,
     pub user_id: String,
+    pub winner_id: String,
+    pub is_game_valid: bool,
+    pub is_error: bool
+}
+
+
+
+#[derive(Clone , Serialize , Deserialize)]
+pub struct GameStatusChangeEvent {
+    pub game_id: String,
+    pub session_id: String,
     pub winner_id: String,
     pub is_game_valid: bool,
     pub is_error: bool
