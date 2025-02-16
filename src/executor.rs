@@ -6,7 +6,7 @@ use solana_client::nonblocking::rpc_client::{self, RpcClient};
 use solana_sdk::signature::Keypair;
 use tokio::sync::mpsc::{Receiver, Sender};
 use futures_util::future;
-use crate::{constants::{GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR}, executor_rpc_client::{Context, VortexExecutorClient}, model::{EventQueueRecords, EventRecord, GameBetSettleKafkaPayload, GameStatusChangeEvent, GameUserBetSettleEvent}, wallet::Wallet};
+use crate::{constants::{GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR}, executor_rpc_client::{Context, VortexExecutorClient}, model::{EventQueueRecords, EventRecord, GameBetSettleKafkaPayload, GameStakeStatusChangeEvent, GameStatusChangeEvent, GameUserBetSettleEvent}, wallet::Wallet};
 
 
 pub struct BetSettleExecutor {
@@ -43,11 +43,11 @@ impl BetSettleExecutor {
     }
 
 
-    pub async fn produce_event_to_kafka_topic(&self , game_bet_events: Vec<GameUserBetSettleEvent> , game_over_events: Vec<GameStatusChangeEvent> , topic: &str ) -> Result<(), KafkaError> {
+    pub async fn produce_event_to_kafka_topic(&self , game_bet_events: Vec<GameUserBetSettleEvent> , game_stake_time_over_events: Vec<GameStakeStatusChangeEvent> , topic: &str ) -> Result<(), KafkaError> {
        
          self.producer.begin_transaction().unwrap();
 
-        let kafka_result = if game_over_events.is_empty() {
+        let kafka_result = if game_stake_time_over_events.is_empty() {
           
            future::try_join_all(game_bet_events.iter().map(|event| async move {
        
@@ -70,7 +70,7 @@ impl BetSettleExecutor {
     
         ).await
       } else {
-        future::try_join_all(game_over_events.iter().map(|event| async move {
+        future::try_join_all(game_stake_time_over_events.iter().map(|event| async move {
        
           let converted_string_event = serde_json::to_string(event).unwrap();
           

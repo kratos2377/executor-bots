@@ -20,3 +20,4 @@ pub const USDC_MINT_ADDRESS: Pubkey = solana_sdk::pubkey!("4zMMC9srt5Ri5X14GAgXh
 pub const GAME_BET_SETTLED: &str = "game_bet_settled";
 pub const GAME_BET_SETTLED_ERROR: &str = "game_bet_settled_error";
 pub const EXECUTOR_GAME_OVER_STATUS_SETTLED: &str = "executor_game_over_staus_settled";
+pub const STAKE_TIME_OVER_RESULT: &str = "stake_time_over_result";

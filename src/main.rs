@@ -2,11 +2,11 @@ use std::{collections::{btree_map::Range, HashMap}, env, fs::File, net::SocketAd
 
 use axum::{response::IntoResponse, routing::get, Router};
 use conf::{config_types::ServerConfiguration, configuration};
-use constants::{EXECUTOR_GAME_OVER_STATUS_SETTLED, GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR, SOLANA_DEVNET_URL};
+use constants::{EXECUTOR_GAME_OVER_STATUS_SETTLED, GAME_BET_SETTLED, GAME_BET_SETTLED_ERROR, SOLANA_DEVNET_URL, STAKE_TIME_OVER_RESULT};
 use event_queue::EventQueue;
 use executor::BetSettleExecutor;
 use log::info;
-use model::{EventQueueRecords, EventRecord, ExecutorGameOverEvent, GameBetSettleKafkaPayload, GameStatusChangeEvent, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD, GAME_OVER_EVENT};
+use model::{EventQueueRecords, EventRecord, ExecutorGameOverEvent, ExecutorGameStakeTimeOverEvent, GameBetSettleKafkaPayload, GameStakeStatusChangeEvent, GameStatusChangeEvent, GameUserBetSettleEvent, CONSUMER_GROUP_BET_EVENT_ADD, EXECUTOR_INDEX_ADD, GAME_OVER_EVENT, GAME_STAKE_TIME_OVER_EVENT};
 use rdkafka::{consumer::StreamConsumer, message::ToBytes, Message};
 use serde_json::json;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -38,6 +38,7 @@ pub mod remaining_account;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
 pub const EXECUTOR_GAME_OVER_EVENT: &str = "executor_game_over_event";
+pub const EXECUTOR_GAME_STAKE_TIME_OVER_EVENT: &str = "executor_game_stake_time_over_event";
 
 #[tokio::main]
 async fn main()   {
@@ -147,13 +148,13 @@ async fn main()   {
             let new_event_record = EventRecord { payload: executor.executor_index.to_string(), event_type: EXECUTOR_INDEX_ADD.to_string() };
             let _ = executor.event_queue_sender.send(new_event_record).await;
   
-          } else if event_record.game_over_record.is_some() {
+          } else if event_record.game_stake_time_over_record.is_some() {
               
 
-            let game_over_record_event = event_record.game_over_record.unwrap();
+            let game_over_record_event = event_record.game_stake_time_over_record.unwrap();
             // session id will always be of length 21 so we can enforce the length
             
-              println!("Starting execution to set status for game_id={:?} session_id={:?} by executor={:?} to over" , game_over_record_event.game_id.clone() , game_over_record_event.session_id.clone() , executor.executor_id);
+              println!("Starting execution to set stake status for game_id={:?} session_id={:?} by executor={:?} to over" , game_over_record_event.game_id.clone() , game_over_record_event.session_id.clone() , executor.executor_id);
               if game_over_record_event.session_id.len() == 21 {
                 let game_id_bytes = Uuid::parse_str(&game_over_record_event.game_id).unwrap().to_bytes_le();
                 
@@ -185,18 +186,18 @@ async fn main()   {
               println!("Recieved error while executing transaction for game over event");
               println!("{:?}" , res.err().unwrap());
                 // If error we will publish error event to kafka
-                let kafka_event =   GameStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
-                   session_id: game_over_record_event.session_id.clone(), winner_id: game_over_record_event.winner_id.clone(), is_game_valid: game_over_record_event.is_game_valid.clone(),
+                let kafka_event =   GameStakeStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
+                   session_id: game_over_record_event.session_id.clone(),
                     is_error: true };
               
-                 ( kafka_event, EXECUTOR_GAME_OVER_STATUS_SETTLED)
+                 ( kafka_event, STAKE_TIME_OVER_RESULT)
               } else {
     
-               let kafka_event =   GameStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
-                session_id: game_over_record_event.session_id.clone(), winner_id: game_over_record_event.winner_id.clone(), is_game_valid: game_over_record_event.is_game_valid.clone(),
+               let kafka_event =   GameStakeStatusChangeEvent { game_id: game_over_record_event.game_id.clone(),
+                session_id: game_over_record_event.session_id.clone(),
                  is_error: false };
     
-                 ( kafka_event , EXECUTOR_GAME_OVER_STATUS_SETTLED)
+                 ( kafka_event , STAKE_TIME_OVER_RESULT)
               };
     
               let _ = executor.produce_event_to_kafka_topic(vec![] , vec![kafka_payload_event] , kafka_topic).await;
@@ -252,7 +253,7 @@ async fn main()   {
 
                 if parsed_payload.is_ok() {
                   let game_bet_record: GameBetSettleKafkaPayload = parsed_payload.unwrap();
-                  let push_res = event_queue.push(EventQueueRecords { game_settle_record: Some(game_bet_record), game_over_record: None });
+                  let push_res = event_queue.push(EventQueueRecords { game_settle_record: Some(game_bet_record), game_stake_time_over_record: None });
 
                   if push_res.is_err() {
                     println!("Error while pushing event in event queue");
@@ -281,13 +282,13 @@ async fn main()   {
               }
             },
 
-            GAME_OVER_EVENT => {
+            GAME_STAKE_TIME_OVER_EVENT => {
               let parsed_payload = serde_json::from_str(&event_record.payload);
 
 
               if parsed_payload.is_ok() {
-                let executor_game_over_record: ExecutorGameOverEvent = parsed_payload.unwrap();
-                let push_res = event_queue.push(EventQueueRecords { game_settle_record: None, game_over_record: Some(executor_game_over_record) });
+                let executor_game_stake_time_over_record: ExecutorGameStakeTimeOverEvent = parsed_payload.unwrap();
+                let push_res = event_queue.push(EventQueueRecords { game_settle_record: None, game_stake_time_over_record: Some(executor_game_stake_time_over_record) });
 
                 if push_res.is_err() {
                   println!("Error while pushing game_over_event event in event queue");
@@ -496,12 +497,12 @@ pub async fn do_listen(
 
             },
 
-            EXECUTOR_GAME_OVER_EVENT => {
+            EXECUTOR_GAME_STAKE_TIME_OVER_EVENT => {
               println!("Received executor game over event");
               println!("With payload: {:?}" , payload.clone());
               let exec_game_over_event = EventRecord {
                   payload,
-                  event_type: GAME_OVER_EVENT.to_string(),
+                  event_type: GAME_STAKE_TIME_OVER_EVENT.to_string(),
               };
 
 
