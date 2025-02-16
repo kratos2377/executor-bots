@@ -11,11 +11,11 @@ kafka:
         - start_game_settle_game_event
       client_id: start_game_settle_game_event.new.client.id
       group_id: start_game_settle_game_event.new.group.id
-    - id: executor_game_over_event
+    - id: executor_game_stake_time_over_event
       topic:
-        - executor_game_over_event
-      client_id: executor_game_over_event.new.client.id
-      group_id: executor_game_over_event.new.group.id
+        - executor_game_stake_time_over_event
+      client_id: executor_game_stake_time_over_event.new.client.id
+      group_id: executor_game_stake_time_over_event.new.group.id
   producer:
     client_id:  executors
     transactional_id: executors-transactions
@@ -24,13 +24,13 @@ kafka:
       - id: start_game_settle_game_event
         topic_name: start_game_settle_game_event
         partitions: 2
-      - id: executor_game_over_event
-        topic_name: executor_game_over_event
+      - id: executor_game_stake_time_over_event
+        topic_name: executor_game_stake_time_over_event
         partitions: 2
 
 executors_config:
   number_of_executors: 20
-  keypair_path: "/home/monarch/proj/executor-bots/keypair/vortex_contracts-keypair.json"
+  keypair_path: "/home/monarch/proj/executor-bots/keypair/id.json"
 
 event_queue_config:
   queue_size: 6000

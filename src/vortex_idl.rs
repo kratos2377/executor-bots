@@ -84,27 +84,16 @@ pub mod instructions {
     #[automatically_derived]
     impl anchor_lang::InstructionData for UpdateUserBet {}
     #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
-    pub struct UpdateGameStatus {
+    pub struct UpdateGameStakeStatus {
         pub game_id: [u8; 16],
         pub session_id: [u8; 21],
     }
     #[automatically_derived]
-    impl anchor_lang::Discriminator for UpdateGameStatus {
-        const DISCRIMINATOR: [u8; 8] = [31, 175, 127, 242, 51, 244, 172, 185];
+    impl anchor_lang::Discriminator for UpdateGameStakeStatus {
+        const DISCRIMINATOR: [u8; 8] = [19, 220, 197, 146, 69, 78, 227, 176];
     }
     #[automatically_derived]
-    impl anchor_lang::InstructionData for UpdateGameStatus {}
-    #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
-    pub struct UpdateGameIsSettledStatus {
-        pub game_id: [u8; 16],
-        pub session_id: [u8; 21],
-    }
-    #[automatically_derived]
-    impl anchor_lang::Discriminator for UpdateGameIsSettledStatus {
-        const DISCRIMINATOR: [u8; 8] = [130, 213, 29, 94, 199, 244, 24, 193];
-    }
-    #[automatically_derived]
-    impl anchor_lang::InstructionData for UpdateGameIsSettledStatus {}
+    impl anchor_lang::InstructionData for UpdateGameStakeStatus {}
     #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
     pub struct SettleAllBetsForInvalidGame {
         pub game_id: [u8; 16],
@@ -349,9 +338,8 @@ pub mod accounts {
         pub game_id: [u8; 16],
         pub pubkey: Pubkey,
         pub total_pot: u64,
-        pub is_game_active: bool,
+        pub can_stake: bool,
         pub game_vault_key: Pubkey,
-        pub is_settled: bool,
         pub session_id: [u8; 21],
     }
     #[automatically_derived]
@@ -723,6 +711,7 @@ pub mod accounts {
         pub game_vault: Pubkey,
         pub user_token_account: Pubkey,
         pub admin: Pubkey,
+        pub vortex_wallet: Pubkey,
         pub rent: Pubkey,
         pub system_program: Pubkey,
         pub token_program: Pubkey,
@@ -776,6 +765,11 @@ pub mod accounts {
                 AccountMeta {
                     pubkey: self.admin,
                     is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: self.vortex_wallet,
+                    is_signer: false,
                     is_writable: true,
                 },
                 AccountMeta {
@@ -834,6 +828,7 @@ pub mod accounts {
         pub game_vault: Pubkey,
         pub user_token_account: Pubkey,
         pub user_bet_wallet_key: Pubkey,
+        pub vortex_wallet: Pubkey,
         pub rent: Pubkey,
         pub system_program: Pubkey,
         pub token_program: Pubkey,
@@ -882,6 +877,11 @@ pub mod accounts {
                 AccountMeta {
                     pubkey: self.user_bet_wallet_key,
                     is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: self.vortex_wallet,
+                    is_signer: false,
                     is_writable: true,
                 },
                 AccountMeta {
@@ -1033,28 +1033,34 @@ pub mod accounts {
     }
     #[repr(C)]
     #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize, Serialize, Deserialize)]
-    pub struct UpdateGameStatus {
+    pub struct UpdateGameStakeStatus {
         pub game: Pubkey,
+        pub game_vault: Pubkey,
         pub vortex_signer: Pubkey,
     }
     #[automatically_derived]
-    impl anchor_lang::Discriminator for UpdateGameStatus {
-        const DISCRIMINATOR: [u8; 8] = [39, 174, 45, 79, 142, 76, 167, 108];
+    impl anchor_lang::Discriminator for UpdateGameStakeStatus {
+        const DISCRIMINATOR: [u8; 8] = [201, 25, 19, 44, 227, 170, 222, 254];
     }
     #[automatically_derived]
-    unsafe impl anchor_lang::__private::bytemuck::Pod for UpdateGameStatus {}
+    unsafe impl anchor_lang::__private::bytemuck::Pod for UpdateGameStakeStatus {}
     #[automatically_derived]
-    unsafe impl anchor_lang::__private::bytemuck::Zeroable for UpdateGameStatus {}
+    unsafe impl anchor_lang::__private::bytemuck::Zeroable for UpdateGameStakeStatus {}
     #[automatically_derived]
-    impl anchor_lang::ZeroCopy for UpdateGameStatus {}
+    impl anchor_lang::ZeroCopy for UpdateGameStakeStatus {}
     #[automatically_derived]
-    impl anchor_lang::InstructionData for UpdateGameStatus {}
+    impl anchor_lang::InstructionData for UpdateGameStakeStatus {}
     #[automatically_derived]
-    impl ToAccountMetas for UpdateGameStatus {
+    impl ToAccountMetas for UpdateGameStakeStatus {
         fn to_account_metas(&self) -> Vec<AccountMeta> {
             vec![
                 AccountMeta {
                     pubkey: self.game,
+                    is_signer: false,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: self.game_vault,
                     is_signer: false,
                     is_writable: true,
                 },
@@ -1067,7 +1073,7 @@ pub mod accounts {
         }
     }
     #[automatically_derived]
-    impl anchor_lang::AccountSerialize for UpdateGameStatus {
+    impl anchor_lang::AccountSerialize for UpdateGameStakeStatus {
         fn try_serialize<W: std::io::Write>(&self, writer: &mut W) -> anchor_lang::Result<()> {
             if writer.write_all(&Self::DISCRIMINATOR).is_err() {
                 return Err(anchor_lang::error::ErrorCode::AccountDidNotSerialize.into());
@@ -1079,71 +1085,7 @@ pub mod accounts {
         }
     }
     #[automatically_derived]
-    impl anchor_lang::AccountDeserialize for UpdateGameStatus {
-        fn try_deserialize(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
-            let given_disc = &buf[..8];
-            if Self::DISCRIMINATOR != given_disc {
-                return Err(anchor_lang::error!(
-                    anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch
-                ));
-            }
-            Self::try_deserialize_unchecked(buf)
-        }
-        fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
-            let mut data: &[u8] = &buf[8..];
-            AnchorDeserialize::deserialize(&mut data)
-                .map_err(|_| anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into())
-        }
-    }
-    #[repr(C)]
-    #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize, Serialize, Deserialize)]
-    pub struct UpdateGameIsSettledStatus {
-        pub game: Pubkey,
-        pub vortex_signer: Pubkey,
-    }
-    #[automatically_derived]
-    impl anchor_lang::Discriminator for UpdateGameIsSettledStatus {
-        const DISCRIMINATOR: [u8; 8] = [191, 99, 60, 42, 196, 253, 127, 96];
-    }
-    #[automatically_derived]
-    unsafe impl anchor_lang::__private::bytemuck::Pod for UpdateGameIsSettledStatus {}
-    #[automatically_derived]
-    unsafe impl anchor_lang::__private::bytemuck::Zeroable for UpdateGameIsSettledStatus {}
-    #[automatically_derived]
-    impl anchor_lang::ZeroCopy for UpdateGameIsSettledStatus {}
-    #[automatically_derived]
-    impl anchor_lang::InstructionData for UpdateGameIsSettledStatus {}
-    #[automatically_derived]
-    impl ToAccountMetas for UpdateGameIsSettledStatus {
-        fn to_account_metas(&self) -> Vec<AccountMeta> {
-            vec![
-                AccountMeta {
-                    pubkey: self.game,
-                    is_signer: false,
-                    is_writable: true,
-                },
-                AccountMeta {
-                    pubkey: self.vortex_signer,
-                    is_signer: false,
-                    is_writable: false,
-                },
-            ]
-        }
-    }
-    #[automatically_derived]
-    impl anchor_lang::AccountSerialize for UpdateGameIsSettledStatus {
-        fn try_serialize<W: std::io::Write>(&self, writer: &mut W) -> anchor_lang::Result<()> {
-            if writer.write_all(&Self::DISCRIMINATOR).is_err() {
-                return Err(anchor_lang::error::ErrorCode::AccountDidNotSerialize.into());
-            }
-            if AnchorSerialize::serialize(self, writer).is_err() {
-                return Err(anchor_lang::error::ErrorCode::AccountDidNotSerialize.into());
-            }
-            Ok(())
-        }
-    }
-    #[automatically_derived]
-    impl anchor_lang::AccountDeserialize for UpdateGameIsSettledStatus {
+    impl anchor_lang::AccountDeserialize for UpdateGameStakeStatus {
         fn try_deserialize(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
             let given_disc = &buf[..8];
             if Self::DISCRIMINATOR != given_disc {
@@ -1420,6 +1362,8 @@ pub mod errors {
         GameIsStillGoingOn,
         #[msg("Game has ended")]
         GameHasEnded,
+        #[msg("Stake Period Over")]
+        StakePeriodOver,
         #[msg("Only Admin can settle bets")]
         OnlyAdminCanSettleBets,
         #[msg("Only Admin can change game states")]

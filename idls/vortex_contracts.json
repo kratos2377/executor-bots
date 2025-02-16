@@ -156,6 +156,11 @@
           "isSigner": true
         },
         {
+          "name": "vortexWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false
@@ -237,6 +242,11 @@
           "name": "userBetWalletKey",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "vortexWallet",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "rent",
@@ -367,7 +377,7 @@
       ]
     },
     {
-      "name": "updateGameStatus",
+      "name": "updateGameStakeStatus",
       "accounts": [
         {
           "name": "game",
@@ -375,37 +385,7 @@
           "isSigner": false
         },
         {
-          "name": "vortexSigner",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "gameId",
-          "type": {
-            "array": [
-              "u8",
-              16
-            ]
-          }
-        },
-        {
-          "name": "sessionId",
-          "type": {
-            "array": [
-              "u8",
-              21
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "updateGameIsSettledStatus",
-      "accounts": [
-        {
-          "name": "game",
+          "name": "gameVault",
           "isMut": true,
           "isSigner": false
         },
@@ -662,16 +642,12 @@
             "type": "u64"
           },
           {
-            "name": "isGameActive",
+            "name": "canStake",
             "type": "bool"
           },
           {
             "name": "gameVaultKey",
             "type": "publicKey"
-          },
-          {
-            "name": "isSettled",
-            "type": "bool"
           },
           {
             "name": "sessionId",
@@ -890,26 +866,31 @@
     },
     {
       "code": 6015,
+      "name": "StakePeriodOver",
+      "msg": "Stake Period Over"
+    },
+    {
+      "code": 6016,
       "name": "OnlyAdminCanSettleBets",
       "msg": "Only Admin can settle bets"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "OnlyAdminCanChangeGameStates",
       "msg": "Only Admin can change game states"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "OnlyAdminCanInitialize",
       "msg": "Only Admin can initialize"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "NonZeroTransferFee",
       "msg": "Non zero transfer fee"
     }
   ],
   "metadata": {
-    "address": "7erCt6RRYepGp2TxGKRiHKH3W5hza4fcDsSfBNqbwXE5"
+    "address": "8LuB5EV2Dif9kDx61Sca5HCtkHnR5txPzLpAVA34fMWm"
   }
 }

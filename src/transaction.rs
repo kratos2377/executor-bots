@@ -12,7 +12,7 @@ use crate::constants::{DEFAULT_PROGRAM_ID, PROGRAM_ID, TOKEN_PROGRAM_ID, USDC_MI
 use crate::remaining_account::RemainingAccount;
 use crate::types::VortexSdkResult;
 use crate::utils::{derive_vortex_signer, get_game_pubkey, get_game_vault_address, get_player_bet_pubkey, get_user_game_bet_pubkey, get_vortex_signer_account, get_vortex_state_account};
-use crate::vortex_idl::accounts::{SettleAllBets, SettleAllBetsForInvalidGame, UpdateGameStatus};
+use crate::vortex_idl::accounts::{SettleAllBets, SettleAllBetsForInvalidGame, UpdateGameStakeStatus};
 use crate::vortex_idl::traits::ToAccountMetas;
 use crate::{constants, vortex_idl::{self, types}};
 
@@ -129,9 +129,10 @@ Ok(VersionedMessage::V0(message))
 
 pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id: [u8;16] , session_id: &[u8;21]) -> VortexSdkResult<VersionedMessage>{
  
-   let accounts = UpdateGameStatus {
+   let accounts = UpdateGameStakeStatus {
     game: get_game_pubkey(game_id, session_id),
     vortex_signer: derive_vortex_signer(),
+    game_vault: get_game_vault_address(game_id, session_id),
 };
 
    let mut account_metas = accounts.to_account_metas();
@@ -139,7 +140,7 @@ pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id
    let ix = Instruction {
        program_id: constants::PROGRAM_ID,
        accounts: account_metas,
-       data: InstructionData::data(&vortex_idl::instructions::UpdateGameStatus {
+       data: InstructionData::data(&vortex_idl::instructions::UpdateGameStakeStatus {
            game_id,
            session_id: *session_id,
        }),
@@ -147,7 +148,7 @@ pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id
 
 
    let message =
-   v0::Message::try_compile(&authority, &vec![ix], &[], Default::default())
+   v0::Message::try_compile(&authority, &vec![], &[], Default::default())
        .expect("failed to compile message");
 
 Ok(VersionedMessage::V0(message))
