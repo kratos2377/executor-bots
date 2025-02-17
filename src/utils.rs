@@ -10,17 +10,18 @@ static VORTEX_STATE_ACCOUNT: OnceLock<Pubkey> = OnceLock::new();
 static VORTEX_SIGNER_ACCOUNT: OnceLock<Pubkey> = OnceLock::new();
 
 
-pub fn get_user_game_bet_pubkey( game_id: [u8;16] , user_betting_on_id: [u8;16] ,   user_bet_wallet_key: Pubkey , session_id: &[u8;21]) -> Pubkey {
+pub fn get_user_game_bet_pubkey( game_id: &[u8;16] , user_betting_on_id: &[u8;16] ,   user_bet_wallet_key: Pubkey , session_id: &[u8;21]) -> Pubkey {
+   
     return Pubkey::find_program_address(
-        &[ "user_game_bet".as_bytes() , &game_id , &user_betting_on_id , user_bet_wallet_key.as_ref() , session_id ], 
+        &[ b"user_game_bet", game_id , user_betting_on_id , &user_bet_wallet_key.to_bytes() , session_id ], 
         &PROGRAM_ID).0;
 }
 
 
 
-pub fn get_game_pubkey( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
+pub fn get_game_pubkey( game_id: &[u8;16]  , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "game".as_bytes() , &game_id  , session_id ], 
+        &[ "game".as_bytes() , game_id  , session_id ], 
         &PROGRAM_ID).0;
 }
 
@@ -32,15 +33,15 @@ pub fn get_game_pubkey( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
 // The reason for this is that the person winning should not be able to increase their bet when they are sure of their victory
 // Since final bet is calculated by (game_total_pot/total_money_staked_on_winner_by_any_person)
 //Winning player might get unfair advantage at the end
-pub fn get_player_bet_pubkey( game_id: [u8;16]  , user_betting_on_id: [u8;16] , session_id: &[u8;21]) -> Pubkey {
+pub fn get_player_bet_pubkey( game_id: &[u8;16]  , user_betting_on_id: &[u8;16] , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ "player_bet".as_bytes() , &game_id  , &user_betting_on_id,  session_id ], 
+        &[ "player_bet".as_bytes() , game_id  , user_betting_on_id,  session_id ], 
         &PROGRAM_ID).0;
 }
 
-pub fn get_game_vault_address( game_id: [u8;16]  , session_id: &[u8;21]) -> Pubkey {
+pub fn get_game_vault_address( game_id: &[u8;16]  , session_id: &[u8;21]) -> Pubkey {
     return Pubkey::find_program_address(
-        &[ &b"game_vault"[..] , &game_id  ,  session_id ], 
+        &[ &b"game_vault"[..] , game_id  ,  session_id ], 
         &PROGRAM_ID).0;
 }
 

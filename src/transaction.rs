@@ -18,13 +18,19 @@ use crate::{constants, vortex_idl::{self, types}};
 
 
 
-pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;16] , user_id: [u8;16],  user_betting_on_id: [u8;16] , session_id: &[u8;21] ,
+pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: &[u8;16] , user_id: &[u8;16],  user_betting_on_id: &[u8;16] , session_id: &[u8;21] ,
      winner_id: [u8;16] , user_bet_wallet_key: Pubkey ) -> VortexSdkResult<VersionedMessage>{
   
         let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
         let get_user_token_account_address = get_associated_token_address(&user_bet_wallet_key , &USDC_MINT_ADDRESS);
+   
+        
+        let user_bet_key = get_user_game_bet_pubkey(game_id , user_betting_on_id , user_bet_wallet_key , session_id);
+
+        println!("USER BET KEY IS: {:?}" , user_bet_key);
+   
     let accounts = SettleAllBets {
-        user_bet: get_user_game_bet_pubkey(game_id , user_betting_on_id , user_bet_wallet_key , session_id),
+        user_bet: user_bet_key,
         game: get_game_pubkey(game_id, session_id),
         player_bet: get_player_bet_pubkey(game_id, user_betting_on_id, session_id),
         game_vault: get_game_vault_address(game_id, session_id),
@@ -55,8 +61,8 @@ pub async fn get_settle_all_games_instruction(authority: Pubkey , game_id: [u8;1
         program_id: constants::PROGRAM_ID,
         accounts: account_metas,
         data: InstructionData::data(&vortex_idl::instructions::SettleAllBets {
-            game_id,
-            user_betting_on_id: user_betting_on_id,
+            game_id: *game_id,
+            user_betting_on_id: *user_betting_on_id,
             session_id: *session_id,
             winner_id: winner_id,
         }),
@@ -72,7 +78,7 @@ Ok(VersionedMessage::V0(message))
 }
 
 
-pub async fn get_settle_bet_instruction_for_invalid_game(authority: Pubkey , game_id: [u8;16] , user_id: [u8;16],  user_betting_on_id: [u8;16] , session_id: &[u8;21] ,
+pub async fn get_settle_bet_instruction_for_invalid_game(authority: Pubkey , game_id: &[u8;16] , user_id: &[u8;16],  user_betting_on_id: &[u8;16] , session_id: &[u8;21] ,
     winner_id: [u8;16] , user_bet_wallet_key: Pubkey, is_player: bool ) -> VortexSdkResult<VersionedMessage>{
  
        let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
@@ -109,8 +115,8 @@ pub async fn get_settle_bet_instruction_for_invalid_game(authority: Pubkey , gam
        program_id: constants::PROGRAM_ID,
        accounts: account_metas,
        data: InstructionData::data(&vortex_idl::instructions::SettleAllBetsForInvalidGame {
-           game_id,
-           user_betting_on_id: user_betting_on_id,
+           game_id: *game_id,
+           user_betting_on_id: *user_betting_on_id,
            session_id: *session_id,
            is_player: is_player,
        }),
@@ -127,7 +133,7 @@ Ok(VersionedMessage::V0(message))
 
 
 
-pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id: [u8;16] , session_id: &[u8;21]) -> VortexSdkResult<VersionedMessage>{
+pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id: &[u8;16] , session_id: &[u8;21]) -> VortexSdkResult<VersionedMessage>{
  
    let accounts = UpdateGameStakeStatus {
     game: get_game_pubkey(game_id, session_id),
@@ -141,7 +147,7 @@ pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id
        program_id: constants::PROGRAM_ID,
        accounts: account_metas,
        data: InstructionData::data(&vortex_idl::instructions::UpdateGameStakeStatus {
-           game_id,
+           game_id: *game_id,
            session_id: *session_id,
        }),
    };

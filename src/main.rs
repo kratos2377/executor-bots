@@ -64,11 +64,11 @@ async fn main()   {
     let vortex_keypair = Keypair::from_bytes(&keypair_bytes).unwrap();
 
     // let each executor have its own kafka producer
-  let kafka_producer = kafka::producer::create_new_kafka_producer(&hy_config.kafka).unwrap();
+
+    let kafka_producer = kafka::producer::create_new_kafka_producer(&hy_config.kafka).unwrap();
     let mut executor = BetSettleExecutor::new(kafka_producer, ind.clone() as u32, event_queue.event_queue_sender.clone(),
                                 RpcClient::new(SOLANA_DEVNET_URL.to_string()) , vortex_keypair  ).await;
 
-    
     println!("Initialized executor={:?} with index={:?}" , executor.executor_id.clone() , executor.executor_index.clone());
     event_queue.add_new_executor(ind.clone(), executor.executor_event_sender.clone());
 
@@ -85,9 +85,13 @@ async fn main()   {
           
             println!("Starting execution to SettleBet for game_id={:?} session_id={:?} by executor={:?}" , bet_settlement_event.game_id.clone() , bet_settlement_event.session_id.clone() , executor.executor_id);
             if bet_settlement_event.session_id.len() == 21 {
-              let game_id_bytes = Uuid::parse_str(&bet_settlement_event.game_id).unwrap().to_bytes_le();
-              let user_id_bytes = Uuid::parse_str(&bet_settlement_event.user_id).unwrap().to_bytes_le();
-              let user_betting_on_bytes = Uuid::parse_str(&bet_settlement_event.user_betting_on).unwrap().to_bytes_le();
+              let game_uuid = Uuid::parse_str(&bet_settlement_event.game_id).unwrap();
+              let user_uuid =Uuid::parse_str(&bet_settlement_event.user_id).unwrap();
+              let user_betting_onuuid = Uuid::parse_str(&bet_settlement_event.user_betting_on).unwrap();
+
+              let game_id_bytes = game_uuid.as_bytes();
+              let user_id_bytes = user_uuid.as_bytes();
+              let user_betting_on_bytes = user_betting_onuuid.as_bytes();
               
             let session_id_bytes = bet_settlement_event.session_id.as_bytes().try_into().unwrap();
               let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
@@ -149,19 +153,21 @@ async fn main()   {
             let _ = executor.event_queue_sender.send(new_event_record).await;
   
           } else if event_record.game_stake_time_over_record.is_some() {
-              
+
 
             let game_over_record_event = event_record.game_stake_time_over_record.unwrap();
             // session id will always be of length 21 so we can enforce the length
             
               println!("Starting execution to set stake status for game_id={:?} session_id={:?} by executor={:?} to over" , game_over_record_event.game_id.clone() , game_over_record_event.session_id.clone() , executor.executor_id);
               if game_over_record_event.session_id.len() == 21 {
-                let game_id_bytes = Uuid::parse_str(&game_over_record_event.game_id).unwrap().to_bytes_le();
+                let game_uuid = Uuid::parse_str(&game_over_record_event.game_id).unwrap();
+    
+                let game_id_bytes = game_uuid.as_bytes();
                 
               let session_id_bytes = game_over_record_event.session_id.as_bytes().try_into().unwrap();
       
                 //Add Solana instruction creator 
-                  let tx = get_change_game_over_status_instruction(*executor.vortex_exec_client.wallet().authority(), game_id_bytes, session_id_bytes).await;
+                  let tx = get_change_game_over_status_instruction(*executor.vortex_exec_client.wallet().authority(), &game_id_bytes, session_id_bytes).await;
     
     
                   
@@ -327,9 +333,7 @@ async fn main()   {
       
               }
             }
-          } else {
-            println!("Executor queue is empty");
-          }
+          } 
         }
       });
     
@@ -529,9 +533,4 @@ pub async fn do_listen(
     
 }
 
-}
-
-
-fn get_current_working_dir() -> std::io::Result<PathBuf> {
-  env::current_dir()
 }
