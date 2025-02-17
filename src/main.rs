@@ -471,6 +471,7 @@ pub async fn do_listen(
 
 
   loop {
+    // Need to somehow add logic to consume events only when size of event_queue <5000
           match stream_consumer.recv().await {
             Err(e) => warn!("Error: {}", e),
             Ok(message) => {
