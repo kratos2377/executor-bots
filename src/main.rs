@@ -321,9 +321,9 @@ async fn main()   {
       
               if bet_event.is_some() {
                 let bet_event_record = bet_event.unwrap();
+               let sender =    event_queue.executors_senders.get(exec_ind_rec).unwrap();
       
-      
-                let _ = event_queue.executors_senders[exec_ind_rec].send(bet_event_record).await;
+                let _ = sender.send(bet_event_record).await;
       
               }
             }
