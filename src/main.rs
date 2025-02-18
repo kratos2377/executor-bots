@@ -302,7 +302,7 @@ async fn main()   {
                   println!("Successfully pushed event in event queue");
                 }
               } else {
-                println!("Error while parsing gamebetsettlekafkapayload event");
+                println!("Error while parsing gamestaketimeover event");
               }
             }
 
