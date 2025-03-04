@@ -3,7 +3,7 @@ use std::{env, sync::atomic::AtomicU16};
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 use std::sync::atomic::Ordering::SeqCst;
-use super::config_types::{EventQueueConfig, ExecutorsConfiguration, KafkaConfiguration, ServerConfiguration};
+use super::config_types::{EventQueueConfig, ExecutorsConfiguration, KafkaConfiguration, LoggingConfiguration, ServerConfiguration};
 
 
 pub static SERVER_PORT: AtomicU16 = AtomicU16::new(0);
@@ -14,6 +14,7 @@ pub struct Configuration {
     pub server: ServerConfiguration,
     pub executors_config: ExecutorsConfiguration,
     pub event_queue_config: EventQueueConfig,
+    pub logging: LoggingConfiguration
 }
 
 impl Configuration {

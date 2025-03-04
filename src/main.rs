@@ -35,6 +35,7 @@ pub mod wallet;
 pub mod blockhash_subscriber;
 pub mod executor_rpc_client;
 pub mod remaining_account;
+pub mod logging_tracing;
 
 pub const START_GAME_SETTLE_EVENT: &str = "start_game_settle_game_event";
 pub const EXECUTOR_GAME_OVER_EVENT: &str = "executor_game_over_event";
