@@ -95,18 +95,26 @@ async fn main()   {
               let user_betting_on_bytes = user_betting_onuuid.as_bytes();
               
             let session_id_bytes = bet_settlement_event.session_id.as_bytes().try_into().unwrap();
-              let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
+            
     
               let user_bet_wallet_key = Pubkey::from_str( &bet_settlement_event.user_wallet_key).unwrap();
               //Add Solana instruction creator 
                 let tx = if bet_settlement_event.is_valid {
+
+                 if !bet_settlement_event.winner_id.is_empty() {
+                  let winner_id_bytes = Uuid::parse_str(&bet_settlement_event.winner_id).unwrap().to_bytes_le();
     
                   get_settle_all_games_instruction(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key ).await
+                 } else {
+                  //stalemate case
+                  get_settle_bet_instruction_for_invalid_game(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes  , user_bet_wallet_key, true ).await
+
+                 }
     
                 } else {
 
                   // We have to send one more field if game is invalid whether the instruction is for player or simple user
-                  get_settle_bet_instruction_for_invalid_game(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes , winner_id_bytes , user_bet_wallet_key, true ).await
+                  get_settle_bet_instruction_for_invalid_game(*executor.vortex_exec_client.wallet().authority() , game_id_bytes , user_id_bytes , user_betting_on_bytes , session_id_bytes  , user_bet_wallet_key, true ).await
                 };
   
   

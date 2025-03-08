@@ -78,8 +78,7 @@ Ok(VersionedMessage::V0(message))
 }
 
 
-pub async fn get_settle_bet_instruction_for_invalid_game(authority: Pubkey , game_id: &[u8;16] , user_id: &[u8;16],  user_betting_on_id: &[u8;16] , session_id: &[u8;21] ,
-    winner_id: [u8;16] , user_bet_wallet_key: Pubkey, is_player: bool ) -> VortexSdkResult<VersionedMessage>{
+pub async fn get_settle_bet_instruction_for_invalid_game(authority: Pubkey , game_id: &[u8;16] , user_id: &[u8;16],  user_betting_on_id: &[u8;16] , session_id: &[u8;21] , user_bet_wallet_key: Pubkey, is_player: bool ) -> VortexSdkResult<VersionedMessage>{
  
        let mut accounts_tree_set  = BTreeSet::<RemainingAccount>::new();
        let get_user_token_account_address = get_associated_token_address(&user_bet_wallet_key , &USDC_MINT_ADDRESS);
