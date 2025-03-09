@@ -76,9 +76,9 @@ async fn main()   {
 
     let executor_handle = tokio::spawn(async move {
      loop {
-       match executor.executor_event_reciever.recv().await {
+       match executor.executor_event_reciever.try_recv() {
 
-        Some(event_record) =>  {
+        Ok(event_record) =>  {
 
           if event_record.game_settle_record.is_some() {
             let bet_settlement_event = event_record.game_settle_record.unwrap();
@@ -233,7 +233,7 @@ async fn main()   {
         
         }
 
-        None => {}
+        Err(err) => {}
       }
     }
     });
@@ -257,9 +257,9 @@ async fn main()   {
     let mut event_records_listener = Box::leak(Box::new(event_queue.executors_order_listener.take().unwrap()));
     async {
       loop {
-        let event_recv = event_records_listener.recv().await;
+        let event_recv = event_records_listener.try_recv();
 
-        if event_recv.is_some() {
+        if event_recv.is_ok() {
           let event_record = event_recv.unwrap();
           match  event_record.event_type.as_str() {
             CONSUMER_GROUP_BET_EVENT_ADD => {
