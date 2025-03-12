@@ -153,7 +153,7 @@ pub async fn get_change_game_over_status_instruction(authority: Pubkey , game_id
 
 
    let message =
-   v0::Message::try_compile(&authority, &vec![], &[], Default::default())
+   v0::Message::try_compile(&authority, &vec![ix], &[], Default::default())
        .expect("failed to compile message");
 
 Ok(VersionedMessage::V0(message))
