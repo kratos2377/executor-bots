@@ -273,7 +273,7 @@ async fn main()   {
                   if push_res.is_err() {
                     println!("Error while pushing event in event queue");
                   } else {
-                    println!("Successfully pushed event in event queue");
+                    println!("Successfully pushed settle bet event in event queue");
                   }
                 } else {
                   println!("Error while parsing gamebetsettlekafkapayload event");
@@ -308,7 +308,7 @@ async fn main()   {
                 if push_res.is_err() {
                   println!("Error while pushing game_over_event event in event queue");
                 } else {
-                  println!("Successfully pushed event in event queue");
+                  println!("Successfully pushed game stake time over event in event queue");
                 }
               } else {
                 println!("Error while parsing gamestaketimeover event");
@@ -335,6 +335,7 @@ async fn main()   {
               let bet_event = event_queue.pop();
       
               if bet_event.is_some() {
+                println!("Received a event from event queue rec. Sending it to executor with index: {:?}" , exec_ind_rec);
                 let bet_event_record = bet_event.unwrap();
                let sender =    event_queue.executors_senders.get(exec_ind_rec).unwrap();
       
