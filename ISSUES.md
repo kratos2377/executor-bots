@@ -3,4 +3,4 @@
 - [ ]  Add S3 support to fetch keypair from a secure location and we can load S3 path from env config (or something better)
 
 
-- [ ] Previous event tx gets settle when new events is consumed. Ideally the event should not stay in queue and should be published
+- [x] Previous event tx gets settle when new events is consumed. Ideally the event should not stay in queue and should be published
