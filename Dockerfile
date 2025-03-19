@@ -1,13 +1,20 @@
-# Build Stage
-FROM ghcr.io/kratos2377/base:latest AS builder
-FROM debian:12 AS debian
+FROM rust:1.85-slim as builder
 
-# Bundle Stage
-FROM gcr.io/distroless/cc-debian12:nonroot
-COPY --from=builder /home/rust/src/target/release/nova ./
-COPY --from=debian /usr/bin/uname /usr/bin/uname
+WORKDIR /app
+COPY . .
+RUN apt-get update && \
+    apt-get install -y \
+    g++ \
+    gcc \
+    make \
+    cmake \
+    pkg-config \
+    libssl-dev
 
-EXPOSE 3025
-ENV ROCKET_ADDRESS=0.0.0.0
-USER nonroot
-CMD ["./nova"]
+
+
+RUN cargo build --release
+
+FROM debian:bookworm-slim
+COPY --from=builder /app/target/release/executor-bots /usr/local/bin/
+CMD ["./executor-bots"]
